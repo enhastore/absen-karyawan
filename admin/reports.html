@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Laporan - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .report-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      align-items: flex-end;
+    }
+    @media (max-width: 768px) {
+      .report-form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Buka Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="header-title-box">
+            <h1>Laporan</h1>
+            <div class="breadcrumb"><span>Rekapitulasi Kehadiran & Lembur</span></div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- Form filter laporan -->
+        <div class="data-card mb-2">
+          <div class="data-card-header">
+            <h3>Buat Laporan Presensi</h3>
+          </div>
+          <div class="data-card-body">
+            <div class="report-form-grid">
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="r-start">Dari Tanggal</label>
+                <input type="date" class="form-control" id="r-start">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="r-end">Sampai Tanggal</label>
+                <input type="date" class="form-control" id="r-end">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="r-department">Departemen</label>
+                <select class="form-control" id="r-department">
+                  <option value="">Semua Departemen</option>
+                </select>
+              </div>
+              <div>
+                <button class="btn btn-primary btn-block" id="btn-generate" style="height:38px;">Tampilkan Data</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clean Stat Cards (No Emoji Icons, No Box Wrappers) -->
+        <div class="stats-grid" id="report-summary" style="display:none;">
+          <div class="stat-card primary">
+            <div class="stat-label">Total Data</div>
+            <div class="stat-value" id="r-total">0</div>
+          </div>
+          <div class="stat-card success">
+            <div class="stat-label">Hadir</div>
+            <div class="stat-value" id="r-present">0</div>
+          </div>
+          <div class="stat-card warning">
+            <div class="stat-label">Terlambat</div>
+            <div class="stat-value" id="r-late">0</div>
+          </div>
+          <div class="stat-card danger">
+            <div class="stat-label">Tidak Hadir</div>
+            <div class="stat-value" id="r-absent">0</div>
+          </div>
+          <div class="stat-card info">
+            <div class="stat-label">Izin & Cuti</div>
+            <div class="stat-value" id="r-leave">0</div>
+          </div>
+        </div>
+
+        <!-- Table Data -->
+        <div class="data-card" id="report-table" style="display:none;">
+          <div class="data-card-header">
+            <h3>Hasil Laporan</h3>
+            <button class="btn btn-ghost btn-sm" id="btn-export-report">Export CSV</button>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Karyawan</th>
+                  <th>Departemen</th>
+                  <th>Tanggal</th>
+                  <th>Masuk</th>
+                  <th>Pulang</th>
+                  <th>Status</th>
+                  <th>Durasi Kerja</th>
+                  <th>Lembur</th>
+                </tr>
+              </thead>
+              <tbody id="report-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    renderSidebar();
+    setupSidebar('reports.html');
+
+    let reportData = [];
+
+    const now = new Date();
+    document.getElementById('r-start').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+    document.getElementById('r-end').value = now.toISOString().split('T')[0];
+
+    async function init() {
+      try {
+        const depts = await api.get('/departments');
+        document.getElementById('r-department').innerHTML = '<option value="">Semua Departemen</option>' +
+          (depts.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        refreshSelect('r-department');
+      } catch (err) {}
+    }
+
+    document.getElementById('btn-generate').addEventListener('click', async () => {
+      const start = document.getElementById('r-start').value;
+      const end = document.getElementById('r-end').value;
+      const dept = document.getElementById('r-department').value;
+      if (!start || !end) return showToast('Pilih rentang tanggal terlebih dahulu', 'warning');
+
+      try {
+        let url = `/attendance/report?start_date=${start}&end_date=${end}`;
+        if (dept) url += `&department=${dept}`;
+        const data = await api.get(url);
+        reportData = data.report || [];
+
+        document.getElementById('report-summary').style.display = 'grid';
+        document.getElementById('report-table').style.display = 'block';
+
+        document.getElementById('r-total').textContent = data.summary.total_records;
+        document.getElementById('r-present').textContent = data.summary.present;
+        document.getElementById('r-late').textContent = data.summary.late;
+        document.getElementById('r-absent').textContent = data.summary.absent;
+        document.getElementById('r-leave').textContent = data.summary.leave;
+
+        const tbody = document.getElementById('report-tbody');
+        if (reportData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:28px;">Tidak ada data pada periode ini</td></tr>';
+        } else {
+          tbody.innerHTML = reportData.map(r => `
+            <tr>
+              <td>
+                <div class="user-cell">
+                  <div class="avatar">${getInitials(r.name)}</div>
+                  <div class="user-details">
+                    <div class="name">${r.name}</div>
+                    <div class="emp-id">${r.employee_id}</div>
+                  </div>
+                </div>
+              </td>
+              <td data-label="Departemen">${r.department_name || '-'}</td>
+              <td data-label="Tanggal">${formatDate(r.date)}</td>
+              <td data-label="Jam Masuk" style="font-weight:600;">${r.clock_in || '-'}</td>
+              <td data-label="Jam Pulang" style="font-weight:600;">${r.clock_out || '-'}</td>
+              <td data-label="Status Kehadiran">${statusBadge(r.status)}</td>
+              <td data-label="Durasi Kerja">${r.work_hours ? r.work_hours + ' jam' : '-'}</td>
+              <td data-label="Lembur">${r.overtime_hours > 0 ? '<span style="color:var(--warning);font-weight:600;">' + r.overtime_hours + ' jam</span>' : '-'}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    document.getElementById('btn-export-report').addEventListener('click', () => {
+      exportToCSV(reportData.map(r => ({
+        ID: r.employee_id,
+        Nama: r.name,
+        Departemen: r.department_name || '',
+        Tanggal: r.date,
+        Jam_Masuk: r.clock_in || '',
+        Jam_Pulang: r.clock_out || '',
+        Status: r.status,
+        Jam_Kerja: r.work_hours || 0,
+        Lembur: r.overtime_hours || 0
+      })), 'rekap_laporan_absensi');
+    });
+
+    init();
+  </script>
+</body>
+</html>

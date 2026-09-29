@@ -1,0 +1,22 @@
+# Node modules
+node_modules/
+backend/node_modules/
+
+# Environment files
+.env
+backend/.env
+
+# Local SQLite databases
+backend/database.sqlite
+*.sqlite
+*.sqlite3
+
+# Uploads / Cache
+backend/uploads/*
+!backend/uploads/.gitkeep
+.DS_Store
+Thumbs.db
+
+# Vercel / build output
+.vercel
+dist

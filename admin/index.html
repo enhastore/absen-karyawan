@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Masuk ke AbsenKu - Sistem Absensi Karyawan">
+  <title>Masuk - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .login-topbar {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-topbar">
+    <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+  </div>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="img/logo-light.png" alt="AbsenKu" class="logo-img">
+        <h1>AbsenKu</h1>
+        <p>Sistem Absensi Karyawan</p>
+      </div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Alamat Email</label>
+          <input type="email" id="email" class="form-control" placeholder="nama@perusahaan.com" required autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Kata Sandi</label>
+          <input type="password" id="password" class="form-control" placeholder="Masukkan kata sandi" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg mt-2" id="btn-login">
+          <span id="login-text">Masuk</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (localStorage.getItem('auth_token')) {
+      const u = localStorage.getItem('user_data');
+      if (u) {
+        try {
+          const parsed = JSON.parse(u);
+          window.location.href = parsed.role === 'admin' ? getAppUrl('dashboard.html') : getAppUrl('employee.html');
+        } catch(e) {}
+      }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('btn-login');
+      const loginText = document.getElementById('login-text');
+
+      btn.disabled = true;
+      loginText.textContent = 'Memverifikasi...';
+
+      try {
+        const data = await api.post('/auth/login', { email, password });
+        api.setToken(data.token);
+        api.setUser(data.user);
+        showToast('Berhasil masuk', 'success');
+        setTimeout(() => {
+          window.location.href = data.user.role === 'admin' ? getAppUrl('dashboard.html') : getAppUrl('employee.html');
+        }, 300);
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+        loginText.textContent = 'Masuk';
+      }
+    });
+  </script>
+</body>
+</html>

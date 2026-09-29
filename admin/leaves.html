@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Izin & Cuti - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Buka Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="header-title-box">
+            <h1>Izin & Cuti</h1>
+            <div class="breadcrumb"><span>Persetujuan Pengajuan Cuti</span></div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- Filter Bar with theme-adaptive dropdowns -->
+        <div class="filter-bar">
+          <select class="form-control" id="filter-status">
+            <option value="">Semua Status</option>
+            <option value="pending">Menunggu Persetujuan</option>
+            <option value="approved">Disetujui</option>
+            <option value="rejected">Ditolak</option>
+          </select>
+        </div>
+
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Daftar Pengajuan Izin & Cuti</h3>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Karyawan</th>
+                  <th>Jenis</th>
+                  <th>Periode</th>
+                  <th>Alasan</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="leaves-tbody">
+                <tr><td colspan="6" class="text-center text-muted" style="padding:28px;">Memuat data pengajuan...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    renderSidebar();
+    setupSidebar('leaves.html');
+
+    const typeLabels = {
+      sick: 'Sakit',
+      annual: 'Cuti Tahunan',
+      personal: 'Keperluan Pribadi',
+      maternity: 'Melahirkan',
+      other: 'Lainnya'
+    };
+
+    async function loadLeaves() {
+      try {
+        const status = document.getElementById('filter-status').value;
+        let url = '/leaves?limit=100';
+        if (status) url += `&status=${status}`;
+
+        const data = await api.get(url);
+        const tbody = document.getElementById('leaves-tbody');
+
+        if (!data.leaves || data.leaves.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:28px;">Tidak ada pengajuan ditemukan</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.leaves.map(l => `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar">${getInitials(l.user_name)}</div>
+                <div class="user-details">
+                  <div class="name">${l.user_name}</div>
+                  <div class="emp-id">${l.employee_id}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Tipe Pengajuan">${typeLabels[l.type] || l.type}</td>
+            <td data-label="Rentang Tanggal" style="font-size:12px;">${formatDate(l.start_date)} s/d ${formatDate(l.end_date)}</td>
+            <td data-label="Alasan" style="font-size:12px;">${l.reason || '-'}</td>
+            <td data-label="Status">${statusBadge(l.status)}</td>
+            <td class="table-actions-cell" data-label="${l.status !== 'pending' ? 'Disetujui / Ditolak' : ''}">
+              ${l.status === 'pending' ? `
+                <div class="table-actions">
+                  <button class="btn btn-success btn-sm" onclick="approveLeave(${l.id}, 'approved')">Setujui</button>
+                  <button class="btn btn-danger btn-sm" onclick="approveLeave(${l.id}, 'rejected')">Tolak</button>
+                </div>
+              ` : `<span class="text-muted" style="font-size:11px;">${l.approver_name ? 'oleh ' + l.approver_name : '-'}</span>`}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function approveLeave(id, status) {
+      const isApproved = status === 'approved';
+      const action = isApproved ? 'menyetujui' : 'menolak';
+      const confirmed = await showConfirm({
+        title: isApproved ? 'Setujui Pengajuan Izin/Cuti' : 'Tolak Pengajuan Izin/Cuti',
+        message: `Apakah Anda yakin ingin ${action} pengajuan izin/cuti ini?`,
+        confirmText: isApproved ? 'Setujui Pengajuan' : 'Tolak Pengajuan',
+        cancelText: 'Batal',
+        danger: !isApproved
+      });
+      if (!confirmed) return;
+      try {
+        await api.put(`/leaves/${id}/approve`, { status });
+        showToast(`Pengajuan berhasil ${isApproved ? 'disetujui' : 'ditolak'}`, 'success');
+        loadLeaves();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    document.getElementById('filter-status').addEventListener('change', loadLeaves);
+    loadLeaves();
+  </script>
+</body>
+</html>

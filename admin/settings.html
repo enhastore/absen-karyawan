@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pengaturan - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Buka Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="header-title-box">
+            <h1>Pengaturan</h1>
+            <div class="breadcrumb"><span>Konfigurasi Operasional Toko Digital</span></div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="grid-2">
+          <!-- Profil Toko Digital -->
+          <div class="data-card">
+            <div class="data-card-header">
+              <h3>Profil Toko & Usaha Digital</h3>
+            </div>
+            <div class="data-card-body">
+              <div class="form-group">
+                <label for="s-company-name">Nama Usaha / Toko Digital</label>
+                <input type="text" class="form-control" id="s-company-name" placeholder="Contoh: DigiStore - Produk Digital & Akun TikTok">
+              </div>
+              <div class="form-group">
+                <label for="s-biz-type">Bidang Bisnis</label>
+                <input type="text" class="form-control" id="s-biz-type" value="Penjualan Produk Digital & Akun Media Sosial / TikTok" readonly style="opacity:0.85;cursor:not-allowed;">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="s-biz-desc">Keterangan Operasional</label>
+                <textarea class="form-control" id="s-biz-desc" placeholder="Catatan jam aktif operasional CS, livestreaming, dan fulfillment..." style="min-height:74px;"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Jam Kerja & Kebijakan Absen -->
+          <div class="data-card">
+            <div class="data-card-header">
+              <h3>Jam Kerja & Kebijakan Presensi</h3>
+            </div>
+            <div class="data-card-body">
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="s-work-start">Jam Mulai Kerja</label>
+                  <input type="time" class="form-control" id="s-work-start">
+                </div>
+                <div class="form-group">
+                  <label for="s-work-end">Jam Selesai Kerja</label>
+                  <input type="time" class="form-control" id="s-work-end">
+                </div>
+              </div>
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="s-tolerance">Toleransi Keterlambatan (menit)</label>
+                  <input type="number" class="form-control" id="s-tolerance" placeholder="15">
+                </div>
+                <div class="form-group">
+                  <label for="s-require-photo">Wajib Swafoto Saat Absen</label>
+                  <select class="form-control" id="s-require-photo">
+                    <option value="false">Tidak (Cukup Sekali Klik)</option>
+                    <option value="true">Ya, Wajib Foto</option>
+                  </select>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);padding:8px 12px;background:var(--bg-item);border-radius:var(--radius-sm);border:1px solid var(--border);">
+                Presensi karyawan bekerja secara instan 1-klik tanpa memerlukan pelacakan GPS.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin: 4px 0 20px; text-align: right;">
+          <button class="btn btn-primary btn-lg" id="btn-save-settings">Simpan Pengaturan</button>
+        </div>
+
+        <!-- Departemen Tim Digital -->
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Daftar Departemen / Divisi Tim</h3>
+            <button class="btn btn-primary btn-sm" onclick="addDepartment()">+ Tambah Departemen</button>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Divisi / Departemen</th>
+                  <th>Tanggung Jawab & Jobdesk</th>
+                  <th>Jumlah Staf</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="dept-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Shift Kerja Tim -->
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Shift Kerja Operasional</h3>
+            <button class="btn btn-primary btn-sm" onclick="addShift()">+ Tambah Shift</button>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nama Shift</th>
+                  <th>Jam Mulai</th>
+                  <th>Jam Selesai</th>
+                  <th>Toleransi</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="shift-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Tambah Divisi -->
+  <div class="modal-overlay" id="modal-add-dept">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Tambah Divisi / Departemen Baru</h3>
+        <button class="modal-close" onclick="closeModal('modal-add-dept')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-dept" onsubmit="event.preventDefault(); submitAddDept();">
+          <div class="form-group">
+            <label>Nama Divisi / Departemen *</label>
+            <input type="text" class="form-control" id="dept-name" placeholder="Contoh: Host Live Streaming" required>
+          </div>
+          <div class="form-group">
+            <label>Uraian Tanggung Jawab / Jobdesk Utama (Opsional)</label>
+            <textarea class="form-control" id="dept-desc" rows="3" placeholder="Contoh: Live streaming TikTok harian, penjualan produk digital & interaksi followers"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-add-dept')">Batal</button>
+        <button class="btn btn-primary" onclick="submitAddDept()">Simpan Divisi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah Shift -->
+  <div class="modal-overlay" id="modal-add-shift">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Tambah Shift Kerja Baru</h3>
+        <button class="modal-close" onclick="closeModal('modal-add-shift')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-shift" onsubmit="event.preventDefault(); submitAddShift();">
+          <div class="form-group">
+            <label>Nama Shift *</label>
+            <input type="text" class="form-control" id="shift-name" placeholder="Contoh: Shift Live Streaming Malam" required>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Jam Mulai *</label>
+              <input type="time" class="form-control" id="shift-start" value="15:00" required>
+            </div>
+            <div class="form-group">
+              <label>Jam Selesai *</label>
+              <input type="time" class="form-control" id="shift-end" value="23:00" required>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-add-shift')">Batal</button>
+        <button class="btn btn-primary" onclick="submitAddShift()">Simpan Shift</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    renderSidebar();
+    setupSidebar('settings.html');
+
+    async function loadSettings() {
+      try {
+        const data = await api.get('/settings');
+        const s = data.settings || {};
+        document.getElementById('s-company-name').value = s.company_name || 'DigiStore - Produk Digital & Akun TikTok';
+        document.getElementById('s-biz-desc').value = s.company_desc || 'Sistem operasional dan presensi tim jualan produk digital, akun TikTok, dan live streaming.';
+        document.getElementById('s-work-start').value = s.work_start || '08:00';
+        document.getElementById('s-work-end').value = s.work_end || '17:00';
+        document.getElementById('s-tolerance').value = s.late_tolerance || '15';
+        document.getElementById('s-require-photo').value = s.require_photo === 'true' ? 'true' : 'false';
+        refreshSelect('s-require-photo');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    document.getElementById('btn-save-settings').addEventListener('click', async () => {
+      try {
+        await api.put('/settings', {
+          company_name: document.getElementById('s-company-name').value.trim(),
+          company_desc: document.getElementById('s-biz-desc').value.trim(),
+          work_start: document.getElementById('s-work-start').value,
+          work_end: document.getElementById('s-work-end').value,
+          late_tolerance: document.getElementById('s-tolerance').value,
+          require_photo: document.getElementById('s-require-photo').value,
+        });
+        showToast('Pengaturan toko berhasil disimpan', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    async function loadDepartments() {
+      try {
+        const data = await api.get('/departments');
+        const tbody = document.getElementById('dept-tbody');
+        if (!data.departments || data.departments.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted" style="padding:20px;">Belum ada divisi</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.departments.map(d => `
+          <tr>
+            <td><strong>${d.name}</strong></td>
+            <td data-label="Jobdesk Utama" style="font-size:12px;color:var(--text-secondary);">${d.description || '-'}</td>
+            <td data-label="Jumlah Karyawan">${d.employee_count || 0} orang</td>
+            <td class="table-actions-cell"><button class="btn btn-ghost btn-sm" onclick="deleteDept(${d.id})" style="color:var(--danger);">Hapus</button></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function addDepartment() {
+      document.getElementById('dept-name').value = '';
+      document.getElementById('dept-desc').value = '';
+      openModal('modal-add-dept');
+    }
+
+    async function submitAddDept() {
+      const name = document.getElementById('dept-name').value.trim();
+      const desc = document.getElementById('dept-desc').value.trim();
+      if (!name) return showToast('Nama divisi wajib diisi', 'warning');
+      try {
+        await api.post('/departments', { name, description: desc });
+        showToast('Divisi berhasil ditambahkan', 'success');
+        closeModal('modal-add-dept');
+        loadDepartments();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteDept(id) {
+      const confirmed = await showConfirm({
+        title: 'Hapus Divisi',
+        message: 'Hapus divisi ini? Pastikan tidak ada karyawan yang masih terdaftar pada divisi ini.',
+        confirmText: 'Hapus Divisi',
+        cancelText: 'Batal',
+        danger: true
+      });
+      if (!confirmed) return;
+      try {
+        await api.delete(`/departments/${id}`);
+        showToast('Divisi berhasil dihapus', 'success');
+        loadDepartments();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadShifts() {
+      try {
+        const data = await api.get('/settings/shifts');
+        const tbody = document.getElementById('shift-tbody');
+        if (!data.shifts || data.shifts.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:20px;">Belum ada shift kerja</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.shifts.map(s => `
+          <tr>
+            <td><strong>${s.name}</strong></td>
+            <td data-label="Jam Mulai">${s.start_time}</td>
+            <td data-label="Jam Selesai">${s.end_time}</td>
+            <td data-label="Toleransi Terlambat">${s.late_tolerance} menit</td>
+            <td data-label="Status Shift">${s.is_default ? '<span class="badge badge-active">Default</span>' : '-'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function addShift() {
+      document.getElementById('shift-name').value = '';
+      document.getElementById('shift-start').value = '15:00';
+      document.getElementById('shift-end').value = '23:00';
+      openModal('modal-add-shift');
+    }
+
+    async function submitAddShift() {
+      const name = document.getElementById('shift-name').value.trim();
+      const start = document.getElementById('shift-start').value;
+      const end = document.getElementById('shift-end').value;
+      if (!name) return showToast('Nama shift wajib diisi', 'warning');
+      try {
+        await api.post('/settings/shifts', { name, start_time: start, end_time: end });
+        showToast('Shift berhasil ditambahkan', 'success');
+        closeModal('modal-add-shift');
+        loadShifts();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    loadSettings();
+    loadDepartments();
+    loadShifts();
+  </script>
+</body>
+</html>
