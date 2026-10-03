@@ -71,6 +71,15 @@ app.get('/', (req, res) => {
   res.redirect('/admin');
 });
 
+// Serve download.html on /download
+app.get('/download', (req, res) => {
+  const downloadPath = path.join(adminPath, 'download.html');
+  if (fs.existsSync(downloadPath)) {
+    return res.sendFile(downloadPath);
+  }
+  res.redirect('/admin/download.html');
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);

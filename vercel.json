@@ -5,6 +5,7 @@
     { "source": "/uploads/(.*)", "destination": "/backend/uploads/$1" },
     { "source": "/admin/(.*)", "destination": "/admin/$1" },
     { "source": "/", "destination": "/admin/index.html" },
+    { "source": "/download", "destination": "/admin/download.html" },
     { "source": "/((?!api|admin|uploads).*)", "destination": "/admin/$1" }
   ]
 }

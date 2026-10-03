@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Download Aplikasi AbsenKu untuk Android - Sistem Presensi Karyawan & Toko Digital">
+  <title>Download Aplikasi AbsenKu Android - v1.2.0</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="img/logo-dark.png">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ===================================
+       ABSENKU DOWNLOAD LANDING PAGE
+       Palette: Matcha Emerald + Dark Forest
+       =================================== */
+    :root, [data-theme="dark"] {
+      --primary: #10B981;
+      --primary-deep: #059669;
+      --primary-light: #6EE7B7;
+      --primary-glow: rgba(16, 185, 129, 0.25);
+      --primary-soft: rgba(16, 185, 129, 0.12);
+
+      --bg-scaffold: #0c120e;
+      --bg-surface: #141c16;
+      --bg-elevated: #1c261f;
+      --bg-glass: rgba(20, 28, 22, 0.75);
+
+      --border: #243328;
+      --border-light: #324637;
+      --border-glow: rgba(16, 185, 129, 0.4);
+
+      --text-primary: #F0F4F1;
+      --text-secondary: #9AA89D;
+      --text-muted: #627266;
+
+      --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      --glow-shadow: 0 0 40px -10px rgba(16, 185, 129, 0.35);
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    [data-theme="light"] {
+      --primary: #059669;
+      --primary-deep: #047857;
+      --primary-light: #34D399;
+      --primary-glow: rgba(5, 150, 105, 0.2);
+      --primary-soft: rgba(5, 150, 105, 0.08);
+
+      --bg-scaffold: #F4F6F4;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #E8ECE8;
+      --bg-glass: rgba(255, 255, 255, 0.85);
+
+      --border: #DDE2DD;
+      --border-light: #ECEFEC;
+      --border-glow: rgba(5, 150, 105, 0.3);
+
+      --text-primary: #1C241E;
+      --text-secondary: #57655B;
+      --text-muted: #8A998E;
+
+      --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+      --glow-shadow: 0 0 30px -10px rgba(5, 150, 105, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg-scaffold);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Ambient Background Glow */
+    .ambient-glow {
+      position: fixed;
+      top: -150px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 500px;
+      background: radial-gradient(circle, var(--primary-glow) 0%, rgba(16, 185, 129, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(40px);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Navbar */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: var(--bg-glass);
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+
+    .brand-logo-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    .brand-logo-box svg {
+      width: 22px;
+      height: 22px;
+      stroke: #FFFFFF;
+    }
+
+    .brand-name {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px solid var(--border-glow);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-theme {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-theme:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-login {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-login:hover {
+      background: var(--bg-elevated);
+      border-color: var(--primary);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 70px 0 60px;
+      position: relative;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      border: 1px solid var(--border-glow);
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+
+    .hero-tag span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: inline-block;
+      box-shadow: 0 0 8px var(--primary);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .hero-title {
+      font-family: var(--font-heading);
+      font-size: 46px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+
+    .hero-title .highlight {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 17px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 34px;
+      max-width: 540px;
+    }
+
+    .download-card-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .download-card-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    }
+
+    .btn-download-apk {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+      color: #FFFFFF;
+      text-decoration: none;
+      border-radius: 14px;
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      box-shadow: var(--glow-shadow);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-download-apk:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.45);
+      background: linear-gradient(135deg, #18c58c, #048259);
+    }
+
+    .btn-download-apk svg {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    .btn-download-apk .btn-text-group {
+      text-align: left;
+    }
+
+    .btn-download-apk .btn-title {
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .btn-download-apk .btn-subtitle {
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    .download-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-secondary);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .meta-item svg {
+      width: 16px;
+      height: 16px;
+      color: var(--primary);
+    }
+
+    .btn-secondary-group {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-pwa {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      text-decoration: none;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-pwa:hover {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .btn-pwa svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Phone Mockup */
+    .hero-mockup-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone-mockup {
+      width: 320px;
+      background: #000000;
+      border-radius: 46px;
+      padding: 12px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      border: 4px solid #283029;
+    }
+
+    .phone-screen {
+      background: #111712;
+      border-radius: 36px;
+      overflow: hidden;
+      color: #F0F2ED;
+      padding: 20px 16px 24px;
+      font-size: 13px;
+    }
+
+    .phone-notch {
+      width: 120px;
+      height: 18px;
+      background: #000000;
+      margin: -20px auto 14px;
+      border-radius: 0 0 14px 14px;
+    }
+
+    .mockup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .mockup-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mockup-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #FFFFFF;
+      font-size: 14px;
+    }
+
+    .mockup-clock-card {
+      background: #1B211C;
+      border: 1px solid #2B382D;
+      border-radius: 18px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .mockup-time {
+      font-family: var(--font-heading);
+      font-size: 28px;
+      font-weight: 700;
+      color: #6EE7B7;
+      letter-spacing: 1px;
+    }
+
+    .mockup-date {
+      font-size: 11px;
+      color: #9BA398;
+      margin-top: 2px;
+    }
+
+    .mockup-btn-absen {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      background: #10B981;
+      color: #FFFFFF;
+      border-radius: 12px;
+      font-weight: 700;
+      text-align: center;
+      font-size: 13px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+
+    .mockup-task-item {
+      background: #182019;
+      border: 1px solid #273429;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mockup-badge-gps {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #34D399;
+      background: rgba(16, 185, 129, 0.15);
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-top: 8px;
+    }
+
+    /* Floating Badges */
+    .float-badge {
+      position: absolute;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glow);
+      padding: 10px 16px;
+      border-radius: 14px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 2;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .float-badge-1 {
+      top: 15%;
+      left: -35px;
+    }
+
+    .float-badge-2 {
+      bottom: 20%;
+      right: -30px;
+      animation-delay: 2s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* QR Scan Section */
+    .qr-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 36px 40px;
+      margin: 40px 0;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 36px;
+      align-items: center;
+      box-shadow: var(--card-shadow);
+    }
+
+    .qr-card {
+      background: #FFFFFF;
+      padding: 12px;
+      border-radius: 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-card img {
+      width: 130px;
+      height: 130px;
+      display: block;
+    }
+
+    .qr-info h3 {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .qr-info p {
+      color: var(--text-secondary);
+      font-size: 15px;
+      max-width: 480px;
+    }
+
+    /* Feature Grid */
+    .section-title-box {
+      text-align: center;
+      margin: 80px 0 48px;
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    .section-subtitle {
+      color: var(--text-secondary);
+      font-size: 16px;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px 26px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--primary);
+      box-shadow: var(--card-shadow), 0 0 20px var(--primary-soft);
+    }
+
+    .feature-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--primary-soft);
+      border: 1px solid var(--border-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      margin-bottom: 20px;
+    }
+
+    .feature-icon-box svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .feature-title {
+      font-family: var(--font-heading);
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Steps Section */
+    .steps-section {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 50px 40px;
+      margin: 40px 0 80px;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-top: 40px;
+      position: relative;
+    }
+
+    .step-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      position: relative;
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #FFFFFF;
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .step-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .step-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    /* FAQ */
+    .faq-container {
+      max-width: 800px;
+      margin: 0 auto 80px;
+    }
+
+    .faq-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .faq-question {
+      padding: 20px 24px;
+      font-family: var(--font-heading);
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .faq-question svg {
+      width: 20px;
+      height: 20px;
+      color: var(--text-muted);
+      transition: transform 0.25s ease;
+    }
+
+    .faq-item.active .faq-question svg {
+      transform: rotate(180deg);
+      color: var(--primary);
+    }
+
+    .faq-answer {
+      padding: 0 24px 20px;
+      color: var(--text-secondary);
+      font-size: 14.5px;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .faq-item.active .faq-answer {
+      display: block;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--text-primary);
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .server-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      border: 1px solid var(--border-glow);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* Modal Download Toast */
+    .download-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1A221C;
+      border: 1px solid var(--primary);
+      color: #FFFFFF;
+      padding: 14px 22px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 999;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .download-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 40px;
+      }
+      .hero-desc {
+        margin: 0 auto 30px;
+      }
+      .hero-mockup-wrapper {
+        order: -1;
+      }
+      .features-grid, .steps-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .qr-section {
+        grid-template-columns: 1fr;
+        text-align: center;
+        justify-items: center;
+      }
+      .qr-info p {
+        margin: 0 auto;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero-title {
+        font-size: 32px;
+      }
+      .features-grid, .steps-grid {
+        grid-template-columns: 1fr;
+      }
+      .float-badge {
+        display: none;
+      }
+      .phone-mockup {
+        width: 290px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="download.html" class="brand">
+        <div class="brand-logo-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div class="brand-name">
+          AbsenKu
+          <span class="brand-badge">Android APK</span>
+        </div>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#fitur">Fitur Aplikasi</a></li>
+        <li><a href="#cara-pasang">Cara Pasang</a></li>
+        <li><a href="#qr-download">Scan QR</a></li>
+        <li><a href="#faq">Tanya Jawab</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="btn-theme" id="theme-toggle" onclick="toggleTheme()" title="Ubah Tema">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+        <a href="index.html" class="btn-login">Panel Admin</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="hero">
+    <div class="container hero-grid">
+      <!-- Left Content -->
+      <div class="hero-content">
+        <div class="hero-tag">
+          <span class="dot"></span>
+          Versi Terbaru v1.2.0 • Toko Digital & TikTok Store
+        </div>
+        
+        <h1 class="hero-title">
+          Absensi Cerdas & Manajemen Tim <span class="highlight">Langsung dari HP.</span>
+        </h1>
+        
+        <p class="hero-desc">
+          Aplikasi presensi terintegrasi GPS & Selfie Kamera untuk staf CS, TikTok Creator, Host Live Streaming, dan tim fulfillment. Data otomatis tersinkronisasi ke cloud server realtime.
+        </p>
+
+        <!-- Download Action Card -->
+        <div class="download-card-box">
+          <button class="btn-download-apk" id="btn-download" onclick="startDownload()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <div class="btn-text-group">
+              <div class="btn-title">Download APK Langsung</div>
+              <div class="btn-subtitle">AbsenKu-v1.2.0.apk • Bebas Iklan & Ringan</div>
+            </div>
+          </button>
+
+          <div class="download-meta">
+            <div class="meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>100% Aman & Terverifikasi</span>
+            </div>
+            <div class="meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Ukuran: 18.4 MB</span>
+            </div>
+            <div class="meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              <span>Android 7.0+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Option -->
+        <div class="btn-secondary-group">
+          <a href="employee.html" class="btn-pwa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            Buka Versi Web / PWA Langsung
+          </a>
+          <a href="#cara-pasang" class="btn-pwa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 16 16 12 12 8"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            Panduan Cara Pasang
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Mockup Phone -->
+      <div class="hero-mockup-wrapper">
+        <div class="float-badge float-badge-1">
+          <span style="color:var(--primary);font-size:16px;">✓</span>
+          <span>Presensi Masuk Berhasil (07:55)</span>
+        </div>
+
+        <div class="float-badge float-badge-2">
+          <span style="color:var(--primary);font-size:16px;">📍</span>
+          <span>Dalam Radius Kantor (12m)</span>
+        </div>
+
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <!-- Mockup Header -->
+            <div class="mockup-header">
+              <div class="mockup-user">
+                <div class="mockup-avatar">BS</div>
+                <div>
+                  <div style="font-weight:700;font-size:13px;">Budi Santoso</div>
+                  <div style="font-size:11px;color:#9BA398;">CS & Admin Order TikTok</div>
+                </div>
+              </div>
+              <span style="font-size:10px;padding:3px 7px;background:#243328;color:#6EE7B7;border-radius:6px;font-weight:600;">EMP001</span>
+            </div>
+
+            <!-- Mockup Clock -->
+            <div class="mockup-clock-card">
+              <div style="font-size:11px;color:#9BA398;margin-bottom:2px;">Waktu Saat Ini</div>
+              <div class="mockup-time" id="mockup-live-clock">08:15:32</div>
+              <div class="mockup-date">Rabu, 03 Oktober 2026</div>
+              <div class="mockup-badge-gps">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Lokasi Valid: Kantor DigiStore
+              </div>
+              <div class="mockup-btn-absen">
+                📸 Absen Masuk Sekarang
+              </div>
+            </div>
+
+            <!-- Mockup Task Item -->
+            <div style="font-size:11px;font-weight:700;color:#9BA398;margin:12px 0 6px;">Tugas Toko Hari Ini</div>
+            <div class="mockup-task-item">
+              <div>
+                <div style="font-weight:600;font-size:11.5px;">QC 20 Akun TikTok Siap Jual</div>
+                <div style="font-size:10px;color:#9BA398;">Deadline 17:00 • Prioritas Urgent</div>
+              </div>
+              <span style="font-size:10px;color:#6EE7B7;background:rgba(16,185,129,0.15);padding:2px 6px;border-radius:4px;">Selesai</span>
+            </div>
+            <div class="mockup-task-item">
+              <div>
+                <div style="font-weight:600;font-size:11.5px;">Broadcast Promo Reseller WA</div>
+                <div style="font-size:10px;color:#9BA398;">Shift Siang • Orderan TikTok</div>
+              </div>
+              <span style="font-size:10px;color:#D4A853;background:rgba(212,168,83,0.15);padding:2px 6px;border-radius:4px;">Proses</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- QR Section -->
+  <section class="container" id="qr-download">
+    <div class="qr-section">
+      <div class="qr-card">
+        <!-- Live Generated QR Code via Google Chart API targeting this page -->
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https%3A%2F%2Fabsen-karyawan-mu-six.vercel.app%2Fadmin%2Fdownload.html&color=10-185-129" alt="Scan QR Code AbsenKu">
+      </div>
+      <div class="qr-info">
+        <h3>Scan QR untuk Buka di HP Anda</h3>
+        <p>Arahkan kamera smartphone Android Anda ke barcode ini untuk langsung membuka halaman unduhan atau menginstall aplikasi di ponsel staf.</p>
+      </div>
+      <div>
+        <a href="https://absen-karyawan-mu-six.vercel.app/admin/download.html" class="btn-pwa" target="_blank">
+          Salin Tautan Halaman
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="container" id="fitur">
+    <div class="section-title-box">
+      <h2 class="section-title">Fitur Unggulan AbsenKu</h2>
+      <p class="section-subtitle">Dirancang khusus untuk kebutuhan operasional toko produk digital, live streaming TikTok, dan tim kerja modern.</p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Feature 1 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Selfie & Anti-Fake GPS</h3>
+        <p class="feature-desc">Presensi aman dengan verifikasi kamera langsung dan pencocokan radius titik koordinat kantor toko secara realtime.</p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Manajemen Shift Fleksibel</h3>
+        <p class="feature-desc">Mendukung multi-shift kerja: Shift Reguler, Shift Siang Content Creator, hingga Shift Malam Live Host TikTok Shop.</p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Pelacakan Tugas & KPI</h3>
+        <p class="feature-desc">Karyawan dapat melihat daftar tugas harian dan menandai progres selesai (QC akun, broadcast orderan, riset video FYP).</p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="3"/>
+            <circle cx="9" cy="10" r="2"/>
+            <path d="M15 8h2M15 12h2M7 16h10"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Digital ID Card Karyawan</h3>
+        <p class="feature-desc">Setiap karyawan memiliki kartu identitas digital interaktif lengkap dengan barcode, nomor staf, dan tombol copy ID instan.</p>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Supabase & Vercel Cloud</h3>
+        <p class="feature-desc">Database cloud PostgreSQL gratis selamanya. Cepat, aman, tidak pernah tidur, dan tidak membebani memori laptop Anda.</p>
+      </div>
+
+      <!-- Feature 6 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+        <h3 class="feature-title">Toleransi Keterlambatan</h3>
+        <p class="feature-desc">Perhitungan jam kerja, otomatisasi deteksi keterlambatan dengan batas toleransi 15 menit, serta kalkulasi lembur harian.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How to Install -->
+  <section class="container" id="cara-pasang">
+    <div class="steps-section">
+      <div style="text-align:center;">
+        <h2 class="section-title">Cara Pasang di HP Android</h2>
+        <p class="section-subtitle">Hanya butuh 3 langkah mudah untuk mulai menggunakan AbsenKu di smartphone Anda.</p>
+      </div>
+
+      <div class="steps-grid">
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Unduh File APK</h3>
+          <p class="step-desc">Klik tombol <strong>Download APK</strong> di bagian atas halaman ini untuk mulai mengunduh file penginstal ke ponsel Anda.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Izinkan Pemasangan</h3>
+          <p class="step-desc">Buka file hasil unduhan. Jika muncul konfirmasi keamanan, aktifkan opsi <em>"Izinkan pemasangan dari sumber ini"</em>.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Buka & Login Akun</h3>
+          <p class="step-desc">Buka aplikasi AbsenKu, masukkan email staf dan kata sandi yang telah didaftarkan oleh Administrator toko Anda.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="container" id="faq">
+    <div class="section-title-box">
+      <h2 class="section-title">Pertanyaan Sering Diajukan (FAQ)</h2>
+      <p class="section-subtitle">Jawaban atas pertanyaan umum seputar instalasi dan penggunaan AbsenKu.</p>
+    </div>
+
+    <div class="faq-container">
+      <div class="faq-item active">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          <span>Bagaimana jika saya ingin memakai tanpa download APK?</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="faq-answer">
+          Anda bisa langsung membuka link website di Google Chrome HP Android Anda, lalu tekan titik tiga di pojok kanan atas dan pilih <strong>"Instal Aplikasi"</strong> atau <strong>"Tambahkan ke Layar Utama"</strong>. Aplikasi langsung terpasang di HP Anda tanpa unduh file APK!
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          <span>Bagaimana cara karyawan mendapatkan akun login?</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="faq-answer">
+          Akun dibuat langsung oleh Administrator toko melalui Panel Admin (menu <em>Karyawan ➜ Tambah Karyawan</em>). Setelah Admin menginput nama, email, dan sandi, staf bisa langsung login detik itu juga.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          <span>Mengapa aplikasi meminta izin Lokasi (GPS) dan Kamera?</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="faq-answer">
+          Izin lokasi dibutuhkan untuk memvalidasi bahwa Anda berada di area kantor atau titik kerja yang sah. Izin kamera digunakan untuk verifikasi foto selfie saat melakukan absen masuk dan pulang.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          <span>Apakah aplikasi ini gratis?</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="faq-answer">
+          Ya, 100% gratis selamanya. Backend dan database berjalan di infrastruktur cloud Vercel & Supabase tanpa biaya langganan bulanan.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Toast -->
+  <div class="download-toast" id="download-toast">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <div>
+      <div style="font-weight:700;font-size:14px;">Mengunduh AbsenKu-v1.2.0.apk...</div>
+      <div style="font-size:12px;color:var(--text-secondary);">Cek notifikasi unduhan browser Anda.</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="server-status-pill">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);box-shadow:0 0 6px var(--primary);"></span>
+        Cloud Server: Online & Terhubung ke Supabase
+      </div>
+      <div class="footer-brand">
+        AbsenKu • Sistem Absensi Karyawan Toko Digital
+      </div>
+      <p style="margin-bottom:12px;">CS & Order • TikTok Content Creator • Fulfillment Akun • Host Live Streaming</p>
+      <p>© 2026 DigiStore & AbsenKu. Seluruh Hak Cipta Dilindungi.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Live Mockup Clock
+    function updateMockupClock() {
+      const el = document.getElementById('mockup-live-clock');
+      if (!el) return;
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      el.textContent = `${h}:${m}:${s}`;
+    }
+    setInterval(updateMockupClock, 1000);
+    updateMockupClock();
+
+    // Theme Toggle
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('absenku_theme', next);
+    }
+    const savedTheme = localStorage.getItem('absenku_theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+
+    // FAQ Toggle
+    function toggleFaq(btn) {
+      const item = btn.parentElement;
+      item.classList.toggle('active');
+    }
+
+    // Download APK Action
+    function startDownload() {
+      const toast = document.getElementById('download-toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4500);
+
+      // Trigger APK download (or fallback to PWA install guide if on Android)
+      const downloadUrl = 'downloads/AbsenKu-v1.2.0.apk';
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'AbsenKu-v1.2.0.apk';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
