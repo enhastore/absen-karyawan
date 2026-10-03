@@ -20,3 +20,8 @@ Thumbs.db
 # Vercel / build output
 .vercel
 dist
+
+# Flutter app build & cache
+app_absenku/build/
+app_absenku/.dart_tool/
+.vscode/
