@@ -1,0 +1,23 @@
+{
+  "name": "AbsenKu - Sistem Absensi Karyawan",
+  "short_name": "AbsenKu",
+  "description": "Sistem Presensi & Manajemen Karyawan Toko Digital",
+  "start_url": "/admin/employee.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/admin/img/logo-dark.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/admin/img/logo-dark.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
