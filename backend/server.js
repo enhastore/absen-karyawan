@@ -15,10 +15,32 @@ const adminPath = fs.existsSync(path.join(__dirname, 'admin'))
   ? path.join(__dirname, 'admin')
   : path.join(__dirname, '..', 'admin');
 
+// Ensure database is initialized and seeded before handling requests
+let dbReadyPromise = null;
+function ensureDbReady() {
+  if (!dbReadyPromise) {
+    dbReadyPromise = (async () => {
+      await initDatabase();
+      await seed();
+    })().catch(err => {
+      console.error('ensureDbReady error:', err);
+      dbReadyPromise = null; // retry on next request if failed
+    });
+  }
+  return dbReadyPromise;
+}
+
 // Middleware
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    await ensureDbReady();
+  }
+  next();
+});
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -103,9 +125,11 @@ async function start() {
   }
 }
 
-// In Vercel serverless, ensure initDatabase is called when module is loaded
+// In Vercel serverless, ensure initDatabase and seed are called when module is loaded
 if (process.env.VERCEL) {
-  initDatabase().catch(err => console.error('Vercel initDatabase error:', err));
+  initDatabase()
+    .then(() => seed())
+    .catch(err => console.error('Vercel initDatabase/seed error:', err));
 } else {
   start();
 }
