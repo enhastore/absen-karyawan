@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Karyawan - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Buka Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="header-title-box">
+            <h1>Karyawan</h1>
+            <div class="breadcrumb"><span>Kelola Tim & Staf Toko Digital</span></div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-primary" onclick="openAddModal()">+ Tambah Karyawan</button>
+          <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- Filter Bar with theme-adaptive dropdowns -->
+        <div class="filter-bar">
+          <input type="text" class="form-control" id="search-input" placeholder="Cari nama, email, atau ID...">
+          <select class="form-control" id="filter-department">
+            <option value="">Semua Departemen</option>
+          </select>
+          <select class="form-control" id="filter-role">
+            <option value="">Semua Peran</option>
+            <option value="admin">Admin</option>
+            <option value="employee">Karyawan</option>
+          </select>
+          <select class="form-control" id="filter-status">
+            <option value="">Semua Status</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Nonaktif</option>
+          </select>
+        </div>
+
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Daftar Tim Karyawan <span id="total-count" class="text-muted" style="font-size:12px;font-weight:400;"></span></h3>
+            <button class="btn btn-ghost btn-sm" id="btn-export">Export CSV</button>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Karyawan</th>
+                  <th>Departemen</th>
+                  <th>Jabatan & Tanggung Jawab</th>
+                  <th>Telepon / WA</th>
+                  <th>Peran</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="employees-tbody">
+                <tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Memuat data karyawan...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Employee Modal (Tambah / Ubah) -->
+  <div class="modal-overlay" id="employee-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Tambah Karyawan</h3>
+        <button class="modal-close" onclick="closeModal('employee-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="employee-form">
+          <input type="hidden" id="edit-id">
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="f-emp-id">ID Karyawan *</label>
+              <input type="text" class="form-control" id="f-emp-id" placeholder="EMP006" required>
+            </div>
+            <div class="form-group">
+              <label for="f-name">Nama Lengkap *</label>
+              <input type="text" class="form-control" id="f-name" placeholder="Nama lengkap karyawan" required>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="f-email">Email Login *</label>
+              <input type="email" class="form-control" id="f-email" placeholder="nama@company.com" required>
+            </div>
+            <div class="form-group">
+              <label for="f-password" id="label-password">Kata Sandi *</label>
+              <input type="password" class="form-control" id="f-password" placeholder="Minimal 6 karakter">
+              <div id="password-hint" style="font-size:11px;color:var(--text-muted);margin-top:3px;display:none;">Kosongkan jika tidak ingin mengubah sandi</div>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="f-department">Departemen</label>
+              <select class="form-control" id="f-department"></select>
+            </div>
+            <div class="form-group">
+              <label for="f-position">Jabatan / Jobdesk Utama</label>
+              <input type="text" class="form-control" id="f-position" placeholder="Contoh: CS TikTok / Content Creator / QC Akun">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="f-phone">Nomor Telepon / WhatsApp</label>
+              <input type="text" class="form-control" id="f-phone" placeholder="08xxxxxxxxxx">
+            </div>
+            <div class="form-group">
+              <label for="f-role">Peran Akses</label>
+              <select class="form-control" id="f-role">
+                <option value="employee">Karyawan</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('employee-modal')">Batal</button>
+        <button class="btn btn-primary" id="btn-save">Simpan Data</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    renderSidebar();
+    setupSidebar('employees.html');
+    let allEmployees = [];
+
+    async function loadDepartments() {
+      try {
+        const data = await api.get('/departments');
+        const options = '<option value="">Semua Departemen</option>' +
+          (data.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        document.getElementById('filter-department').innerHTML = options;
+        document.getElementById('f-department').innerHTML = '<option value="">Pilih Departemen</option>' +
+          (data.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        refreshSelect('filter-department');
+        refreshSelect('f-department');
+      } catch (err) {}
+    }
+
+    async function loadEmployees() {
+      try {
+        const dept = document.getElementById('filter-department').value;
+        const role = document.getElementById('filter-role').value;
+        const status = document.getElementById('filter-status').value;
+        const search = document.getElementById('search-input').value;
+
+        let url = '/users?limit=100';
+        if (dept) url += `&department=${dept}`;
+        if (role) url += `&role=${role}`;
+        if (status) url += `&status=${status}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        const data = await api.get(url);
+        allEmployees = data.users || [];
+        document.getElementById('total-count').textContent = `(${allEmployees.length} staf)`;
+
+        const tbody = document.getElementById('employees-tbody');
+        if (allEmployees.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Tidak ada data karyawan ditemukan</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = allEmployees.map(u => `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar">${getInitials(u.name)}</div>
+                <div class="user-details">
+                  <div class="name">${u.name}</div>
+                  <div class="emp-id">${u.employee_id || '-'} · ${u.email}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Departemen">${u.department_name || '-'}</td>
+            <td data-label="Jabatan & Tanggung Jawab">${u.position || '-'}</td>
+            <td data-label="Telepon / WA">${u.phone ? `<a href="https://wa.me/${u.phone.replace(/[^0-9]/g,'')}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:500;">${u.phone}</a>` : '-'}</td>
+            <td data-label="Peran">${u.role === 'admin' ? '<span class="badge badge-high">Admin</span>' : '<span class="badge badge-info">Karyawan</span>'}</td>
+            <td data-label="Status">${statusBadge(u.status)}</td>
+            <td class="table-actions-cell">
+              <div class="table-actions">
+                <button class="btn btn-ghost btn-sm" onclick="editEmployee(${u.id})">Ubah</button>
+                <button class="btn btn-ghost btn-sm" onclick="deleteEmployee(${u.id}, '${u.name}')" style="color:var(--danger);" title="Hapus Karyawan">Hapus</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleEmployeeStatus(${u.id}, '${u.status}')">
+                  ${u.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function openAddModal() {
+      document.getElementById('modal-title').textContent = 'Tambah Karyawan Baru';
+      document.getElementById('edit-id').value = '';
+      document.getElementById('f-emp-id').value = 'EMP00' + (allEmployees.length + 1);
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-email').value = '';
+      document.getElementById('f-password').value = '';
+      document.getElementById('f-password').required = true;
+      document.getElementById('label-password').textContent = 'Kata Sandi *';
+      document.getElementById('password-hint').style.display = 'none';
+      document.getElementById('f-department').value = '';
+      document.getElementById('f-position').value = '';
+      document.getElementById('f-phone').value = '';
+      document.getElementById('f-role').value = 'employee';
+      refreshSelect('f-department');
+      refreshSelect('f-role');
+      openModal('employee-modal');
+    }
+
+    function editEmployee(id) {
+      const u = allEmployees.find(x => x.id === id);
+      if (!u) return;
+      document.getElementById('modal-title').textContent = 'Ubah Data Karyawan';
+      document.getElementById('edit-id').value = u.id;
+      document.getElementById('f-emp-id').value = u.employee_id || '';
+      document.getElementById('f-name').value = u.name;
+      document.getElementById('f-email').value = u.email;
+      document.getElementById('f-password').value = '';
+      document.getElementById('f-password').required = false;
+      document.getElementById('label-password').textContent = 'Kata Sandi Baru (Opsional)';
+      document.getElementById('password-hint').style.display = 'block';
+      document.getElementById('f-department').value = u.department_id || '';
+      document.getElementById('f-position').value = u.position || '';
+      document.getElementById('f-phone').value = u.phone || '';
+      document.getElementById('f-role').value = u.role;
+      refreshSelect('f-department');
+      refreshSelect('f-role');
+      openModal('employee-modal');
+    }
+
+    document.getElementById('btn-save').addEventListener('click', async () => {
+      const id = document.getElementById('edit-id').value;
+      const body = {
+        employee_id: document.getElementById('f-emp-id').value.trim(),
+        name: document.getElementById('f-name').value.trim(),
+        email: document.getElementById('f-email').value.trim(),
+        department_id: document.getElementById('f-department').value ? parseInt(document.getElementById('f-department').value) : null,
+        position: document.getElementById('f-position').value.trim(),
+        phone: document.getElementById('f-phone').value.trim(),
+        role: document.getElementById('f-role').value
+      };
+
+      const pw = document.getElementById('f-password').value;
+      if (pw && pw.trim().length > 0) body.password = pw.trim();
+
+      if (!body.employee_id || !body.name || !body.email) {
+        return showToast('ID Karyawan, nama, dan email wajib diisi', 'warning');
+      }
+
+      try {
+        if (id) {
+          await api.put(`/users/${id}`, body);
+          showToast('Data karyawan berhasil diperbarui', 'success');
+        } else {
+          if (!pw) return showToast('Kata sandi harus diisi untuk akun karyawan baru', 'warning');
+          await api.post('/users', body);
+          showToast('Karyawan baru berhasil ditambahkan', 'success');
+        }
+        closeModal('employee-modal');
+        loadEmployees();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    async function deleteEmployee(id, name) {
+      const confirmed = await showConfirm({
+        title: 'Hapus Karyawan',
+        message: `Apakah Anda yakin ingin menghapus karyawan "${name}" secara permanen?\n\nData presensi dan tugas terkait karyawan ini akan dibersihkan.`,
+        confirmText: 'Hapus Karyawan',
+        cancelText: 'Batal',
+        danger: true
+      });
+      if (!confirmed) return;
+      try {
+        const res = await api.delete(`/users/${id}`);
+        showToast(res.message || 'Karyawan berhasil dihapus', 'success');
+        loadEmployees();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function toggleEmployeeStatus(id, currentStatus) {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
+      const confirmed = await showConfirm({
+        title: `${newStatus === 'active' ? 'Aktifkan' : 'Nonaktifkan'} Karyawan`,
+        message: `Apakah Anda yakin ingin ${action} akun karyawan ini?`,
+        confirmText: newStatus === 'active' ? 'Aktifkan Akun' : 'Nonaktifkan Akun',
+        cancelText: 'Batal',
+        danger: newStatus === 'inactive'
+      });
+      if (!confirmed) return;
+      try {
+        await api.put(`/users/${id}`, { status: newStatus });
+        showToast(`Karyawan berhasil ${newStatus === 'active' ? 'diaktifkan' : 'dinonaktifkan'}`, 'success');
+        loadEmployees();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    document.getElementById('btn-export').addEventListener('click', () => {
+      exportToCSV(allEmployees.map(u => ({
+        ID: u.employee_id,
+        Nama: u.name,
+        Email: u.email,
+        Departemen: u.department_name || '',
+        Jabatan: u.position || '',
+        Peran: u.role,
+        Status: u.status
+      })), 'daftar_karyawan_toko_digital');
+    });
+
+    document.getElementById('filter-department').addEventListener('change', loadEmployees);
+    document.getElementById('filter-role').addEventListener('change', loadEmployees);
+    document.getElementById('filter-status').addEventListener('change', loadEmployees);
+    document.getElementById('search-input').addEventListener('input', debounce(loadEmployees, 300));
+
+    loadDepartments();
+    loadEmployees();
+  </script>
+</body>
+</html>

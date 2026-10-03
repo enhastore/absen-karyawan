@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Asisten AI & Bot Telegram - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .key-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .key-input-wrapper input {
+      padding-right: 42px;
+    }
+    .btn-toggle-eye {
+      position: absolute;
+      right: 8px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition-fast);
+    }
+    .btn-toggle-eye:hover {
+      color: var(--text-primary);
+    }
+    .btn-toggle-eye svg {
+      width: 18px;
+      height: 18px;
+    }
+    .bot-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+      font-size: 13px;
+    }
+    .card-action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .simulation-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .simulation-response {
+      background: var(--bg-scaffold);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 70px;
+    }
+    .key-helper-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    /* Compact Card & Secure Key Display (DayliDo Clean Style) */
+    .data-card.compact {
+      margin-bottom: 14px;
+    }
+    .data-card.compact .data-card-header {
+      padding: 10px 14px;
+    }
+    .data-card.compact .data-card-body {
+      padding: 12px 14px;
+    }
+    .key-secure-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: var(--bg-item);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      gap: 8px;
+      min-width: 0;
+    }
+    .key-secure-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .key-secure-left svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--primary);
+      flex-shrink: 0;
+    }
+    .key-masked-dots {
+      font-family: monospace;
+      letter-spacing: 1.5px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      user-select: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .key-secure-badge {
+      font-size: 10.5px;
+      color: var(--primary);
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-xs {
+      padding: 2px 8px;
+      font-size: 11px;
+      height: 24px;
+      line-height: 18px;
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+    }
+    .key-links-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      font-size: 11px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .key-links-row a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .key-links-row a:hover {
+      text-decoration: underline;
+    }
+    .form-control-sm {
+      padding: 6px 10px;
+      font-size: 12.5px;
+      height: 34px;
+    }
+
+    @media (max-width: 768px) {
+      .card-action-bar {
+        justify-content: stretch;
+      }
+      .card-action-bar .btn {
+        width: 100%;
+      }
+      .key-helper-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Buka Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="header-title-box">
+            <h1>Asisten AI & Bot Telegram</h1>
+            <div class="breadcrumb"><span>Automasi Notifikasi, Tugas, dan Presensi Selfie Karyawan</span></div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- BARIS 1: INTEGRASI API GEMINI & TELEGRAM (RINGKAS & RAMPING) -->
+        <div class="grid-2">
+          <!-- CARD 1: GOOGLE GEMINI AI -->
+          <div class="data-card compact">
+            <div class="data-card-header">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <h3 style="font-size:14px;margin:0;">Google Gemini AI</h3>
+                <span class="badge" id="badge-gemini-status" style="font-size:10.5px;padding:2px 7px;">Belum Diatur</span>
+              </div>
+            </div>
+            <div class="data-card-body">
+              <!-- SECURE MASKED STATE (Tampil jika sudah tersimpan & tersembunyi) -->
+              <div class="key-secure-row" id="gemini-secure-row" style="display:none;">
+                <div class="key-secure-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span class="key-masked-dots">••••••••••••</span>
+                  <span class="key-secure-badge">Tersimpan Aman</span>
+                </div>
+                <button type="button" class="btn btn-ghost btn-xs" onclick="toggleEditKey('gemini', true)">Ganti Key</button>
+              </div>
+
+              <!-- INPUT FORM (Tampil saat belum ada key atau saat klik Ganti Key) -->
+              <div id="gemini-input-group">
+                <div class="key-input-wrapper">
+                  <input type="password" class="form-control form-control-sm" id="ai-gemini-key" placeholder="Masukkan API Key Google AI Studio...">
+                  <button type="button" class="btn-toggle-eye" onclick="toggleSecretVisibility('ai-gemini-key', this)" title="Lihat/Sembunyikan">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <div class="key-links-row">
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Dapatkan API Key di Google AI Studio &rarr;</a>
+                  <button type="button" class="btn btn-ghost btn-xs" id="btn-cancel-gemini-edit" onclick="toggleEditKey('gemini', false)" style="display:none;color:var(--text-muted);">Batal</button>
+                </div>
+              </div>
+
+              <!-- HIDDEN MODEL INPUT (Default Gemini 3.5 Flash Lite) -->
+              <input type="hidden" id="ai-gemini-model" value="gemini-3.5-flash-lite">
+
+              <!-- ACTIONS (COMPACT) -->
+              <div style="display:flex;gap:8px;justify-content:space-between;margin-top:10px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-ghost btn-sm" id="btn-test-gemini" onclick="testGeminiConnection()" style="height:34px;padding:0 12px;font-size:12px;flex:1;min-width:80px;">
+                  Uji Koneksi
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-save-gemini-key" onclick="saveAIConfig()" style="height:34px;padding:0 14px;font-size:12px;flex:2;min-width:140px;">
+                  Simpan Key
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 2: TELEGRAM BOT INTEGRATION -->
+          <div class="data-card compact">
+            <div class="data-card-header">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <h3 style="font-size:14px;margin:0;">Bot Telegram</h3>
+                <span class="badge" id="badge-bot-status" style="font-size:10.5px;padding:2px 7px;">Belum Terhubung</span>
+              </div>
+              <span id="display-bot-username" style="font-size:11.5px;color:var(--primary);font-weight:600;"></span>
+            </div>
+            <div class="data-card-body">
+              <!-- SECURE MASKED STATE (Tampil jika sudah tersimpan & tersembunyi) -->
+              <div class="key-secure-row" id="telegram-secure-row" style="display:none;">
+                <div class="key-secure-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span class="key-masked-dots">••••••••••••</span>
+                  <span class="key-secure-badge">Tersimpan Aman</span>
+                </div>
+                <button type="button" class="btn btn-ghost btn-xs" onclick="toggleEditKey('telegram', true)">Ganti Token</button>
+              </div>
+
+              <!-- INPUT FORM (Tampil saat belum ada token atau saat klik Ganti Token) -->
+              <div id="telegram-input-group">
+                <div class="key-input-wrapper">
+                  <input type="password" class="form-control form-control-sm" id="tg-bot-token" placeholder="Token dari @BotFather (Contoh: 7123...:AAH...)">
+                  <button type="button" class="btn-toggle-eye" onclick="toggleSecretVisibility('tg-bot-token', this)" title="Lihat/Sembunyikan">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <div class="key-links-row">
+                  <a href="https://t.me/BotFather" target="_blank" rel="noopener">Buat Bot baru via @BotFather &rarr;</a>
+                  <button type="button" class="btn btn-ghost btn-xs" id="btn-cancel-telegram-edit" onclick="toggleEditKey('telegram', false)" style="display:none;color:var(--text-muted);">Batal</button>
+                </div>
+              </div>
+
+              <!-- ROW CHAT ID ADMIN (COMPACT) -->
+              <div style="margin-top:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+                  <label for="tg-admin-chat-id" style="font-size:11px;color:var(--text-muted);margin:0;">Chat ID Admin (Laporan)</label>
+                  <a href="https://t.me/userinfobot" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--text-muted);text-decoration:none;">Cek ID via @userinfobot</a>
+                </div>
+                <input type="text" class="form-control form-control-sm" id="tg-admin-chat-id" placeholder="Contoh: 123456789" style="font-size:12px;padding:6px 10px;">
+              </div>
+
+              <!-- ACTIONS (COMPACT) -->
+              <div style="display:flex;gap:8px;justify-content:space-between;margin-top:10px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-ghost btn-sm" id="btn-test-tg" onclick="testTelegramConnection()" style="height:34px;padding:0 12px;font-size:12px;flex:1;min-width:80px;">
+                  Uji Bot
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-save-ai-config" onclick="saveAIConfig()" style="height:34px;padding:0 14px;font-size:12px;flex:2;min-width:140px;">
+                  Simpan Konfigurasi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARIS 2: OTOMATISASI & PERINGATAN PESAN -->
+        <div class="data-card mt-3">
+          <div class="data-card-header">
+            <h3>Jadwal Otomatisasi & Pengingat AI</h3>
+          </div>
+          <div class="data-card-body" style="padding-top:6px;">
+            <!-- Row 1: Pengingat Masuk -->
+            <div class="flat-setting-row">
+              <div class="flat-setting-info">
+                <div class="flat-setting-title">Pengingat Presensi Masuk (Pagi)</div>
+                <div class="flat-setting-desc">Kirim peringatan otomatis via Telegram 15 menit sebelum jam kerja kepada karyawan yang belum melakukan presensi masuk.</div>
+              </div>
+              <div class="flat-setting-actions">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="triggerBroadcast('attendance')" title="Kirim notifikasi langsung ke semua yang belum absen">
+                  Kirim Peringatan Sekarang
+                </button>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="toggle-reminder-in">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Row 2: Pengingat Pulang -->
+            <div class="flat-setting-row">
+              <div class="flat-setting-info">
+                <div class="flat-setting-title">Pengingat Presensi Pulang (Selesai Kerja)</div>
+                <div class="flat-setting-desc">Kirim notifikasi saat jam operasional shift berakhir untuk mengingatkan karyawan mencatat jam pulang dan durasi kerja.</div>
+              </div>
+              <div class="flat-setting-actions">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="toggle-reminder-out">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Row 3: Pengingat Tugas & Deadline -->
+            <div class="flat-setting-row">
+              <div class="flat-setting-info">
+                <div class="flat-setting-title">Pengingat Jobdesk & Tugas Aktif</div>
+                <div class="flat-setting-desc">Kirim daftar tugas dan pesanan digital yang mendekati deadline langsung ke chat masing-masing staf yang ditugaskan.</div>
+              </div>
+              <div class="flat-setting-actions">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="triggerBroadcast('tasks')">
+                  Kirim Pengingat Tugas Sekarang
+                </button>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="toggle-reminder-tasks">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Row 4: Laporan Harian ke Admin -->
+            <div class="flat-setting-row">
+              <div class="flat-setting-info">
+                <div class="flat-setting-title">Laporan Rekap Harian ke Admin</div>
+                <div class="flat-setting-desc">Kirim rangkuman presensi tim, jumlah terlambat, dan status tugas harian ke Telegram Admin secara otomatis.</div>
+              </div>
+              <div class="flat-setting-actions">
+                <input type="time" class="form-control select-inline" id="time-daily-report" value="17:30" style="width:105px;padding:6px 10px;">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="triggerBroadcast('daily_report')">
+                  Kirim Rekap Sekarang
+                </button>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="toggle-daily-report">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARIS 3: STATUS HUBUNGAN TELEGRAM KARYAWAN -->
+        <div class="data-card mt-3">
+          <div class="data-card-header" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <h3>Status Akun Telegram Karyawan</h3>
+              <p class="text-secondary" style="font-size:12px;margin:2px 0 0 0;">
+                Karyawan cukup mengirimkan <code>/start [ID_KARYAWAN]</code> (misal: <code>/start EMP001</code>) ke bot untuk menghubungkan akun secara otomatis.
+              </p>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="loadEmployeesTelegram()">Perbarui Data</button>
+          </div>
+          <div class="data-card-body" style="padding:0;">
+            <div class="data-table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Karyawan</th>
+                    <th>Divisi & Jabatan</th>
+                    <th>Status Telegram</th>
+                    <th>Chat ID / Username</th>
+                    <th style="text-align:right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="employees-telegram-tbody">
+                  <tr><td colspan="5" class="text-center text-muted" style="padding:24px;">Memuat data karyawan...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARIS 4: SIMULATOR & PANDUAN PERINTAH BOT -->
+        <div class="grid-2 mt-3">
+          <!-- CARD PANDUAN FITUR -->
+          <div class="data-card">
+            <div class="data-card-header">
+              <h3>Panduan Presensi & Perintah Bot Telegram</h3>
+            </div>
+            <div class="data-card-body" style="font-size:13px;line-height:1.6;">
+              <p style="margin-bottom:12px;color:var(--text-secondary);">
+                Karyawan dapat menggunakan bot Telegram tanpa harus membuka halaman aplikasi web:
+              </p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="border-bottom:1px solid var(--border);padding-bottom:8px;">
+                  <strong style="color:var(--primary);">📸 Kirim Foto Selfie Langsung</strong><br>
+                  <span class="text-secondary" style="font-size:12px;">Bot otomatis mendeteksi foto selfie, mencatat presensi masuk/pulang, dan menyimpan foto ke database.</span>
+                </div>
+                <div style="border-bottom:1px solid var(--border);padding-bottom:8px;">
+                  <code>/tugas</code><br>
+                  <span class="text-secondary" style="font-size:12px;">Menampilkan daftar tugas aktif karyawan beserta prioritas dan tenggat waktu.</span>
+                </div>
+                <div style="border-bottom:1px solid var(--border);padding-bottom:8px;">
+                  <code>/selesai &lt;ID_TUGAS&gt;</code> (Contoh: <code>/selesai 3</code>)<br>
+                  <span class="text-secondary" style="font-size:12px;">Menandai tugas telah selesai langsung dari chat Telegram.</span>
+                </div>
+                <div>
+                  <code>/status</code><br>
+                  <span class="text-secondary" style="font-size:12px;">Menampilkan rincian jam masuk, jam pulang, dan durasi kerja hari ini.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD SIMULATOR UJI COBA LANGSUNG -->
+          <div class="data-card">
+            <div class="data-card-header">
+              <h3>Simulator Respon Bot Telegram</h3>
+            </div>
+            <div class="data-card-body">
+              <p class="text-secondary" style="font-size:12px;margin-bottom:12px;">
+                Uji langsung bagaimana bot merespons perintah tanpa perlu mengirim pesan dari Telegram.
+              </p>
+
+              <div class="form-group">
+                <label for="sim-user-select">Pilih Karyawan Pengirim</label>
+                <select class="form-control" id="sim-user-select">
+                  <option value="">Pilih karyawan...</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="sim-message-input">Pesan / Perintah Uji</label>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" class="form-control" id="sim-message-input" value="/tugas" placeholder="Ketik perintah, misal: /tugas, /status, /masuk...">
+                  <button type="button" class="btn btn-primary" onclick="runSimulation()" style="white-space:nowrap;">Kirim Uji</button>
+                </div>
+              </div>
+
+              <div class="simulation-box">
+                <label class="text-muted" style="font-size:11.5px;font-weight:600;">Balasan dari Bot AbsenKu:</label>
+                <div class="simulation-response" id="sim-response-box">Hasil respon bot akan tampil di sini setelah Anda mengklik 'Kirim Uji'.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARIS 5: LOG AKTIVITAS BOT & ASISTEN AI -->
+        <div class="data-card mt-3">
+          <div class="data-card-header" style="justify-content:space-between;">
+            <h3>Log Aktivitas Asisten AI & Bot Telegram</h3>
+            <button class="btn btn-ghost btn-sm" onclick="loadLogs()">Perbarui Log</button>
+          </div>
+          <div class="data-card-body" id="bot-logs-container" style="padding-top:6px;max-height:360px;overflow-y:auto;">
+            <div class="text-center text-muted" style="padding:20px;">Memuat riwayat log...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL EDIT TELEGRAM KARYAWAN -->
+  <div class="modal-overlay" id="modal-edit-tg">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-tg-title">Hubungkan Telegram Karyawan</h3>
+        <button class="modal-close" onclick="closeModal('modal-edit-tg')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-emp-id">
+        <div class="form-group">
+          <label>Nama Karyawan</label>
+          <input type="text" class="form-control" id="edit-emp-name" readonly style="opacity:0.85;">
+        </div>
+        <div class="form-group">
+          <label>Chat ID Telegram *</label>
+          <input type="text" class="form-control" id="edit-emp-chat-id" placeholder="Contoh: 123456789">
+          <span class="text-muted" style="font-size:11.5px;display:block;margin-top:4px;">Didapatkan dari akun Telegram karyawan atau saat karyawan chat <code>/start [ID]</code> ke bot.</span>
+        </div>
+        <div class="form-group">
+          <label>Username Telegram (Opsional)</label>
+          <input type="text" class="form-control" id="edit-emp-username" placeholder="Contoh: @nama_karyawan">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modal-edit-tg')">Batal</button>
+        <button class="btn btn-primary" onclick="submitEditEmployeeTelegram()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    renderSidebar();
+    setupSidebar('ai-assistant.html');
+
+    function toggleSecretVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+      } else {
+        input.type = 'password';
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+      }
+    }
+
+    let hasGeminiKey = false;
+    let hasTelegramToken = false;
+
+    function toggleEditKey(type, isEditing) {
+      if (type === 'gemini') {
+        const secRow = document.getElementById('gemini-secure-row');
+        const inputGroup = document.getElementById('gemini-input-group');
+        const cancelBtn = document.getElementById('btn-cancel-gemini-edit');
+        const keyInput = document.getElementById('ai-gemini-key');
+
+        if (isEditing) {
+          secRow.style.display = 'none';
+          inputGroup.style.display = 'block';
+          if (cancelBtn) cancelBtn.style.display = hasGeminiKey ? 'inline-block' : 'none';
+          keyInput.value = '';
+          keyInput.focus();
+        } else {
+          secRow.style.display = 'flex';
+          inputGroup.style.display = 'none';
+          keyInput.value = '';
+        }
+      } else if (type === 'telegram') {
+        const secRow = document.getElementById('telegram-secure-row');
+        const inputGroup = document.getElementById('telegram-input-group');
+        const cancelBtn = document.getElementById('btn-cancel-telegram-edit');
+        const tokenInput = document.getElementById('tg-bot-token');
+
+        if (isEditing) {
+          secRow.style.display = 'none';
+          inputGroup.style.display = 'block';
+          if (cancelBtn) cancelBtn.style.display = hasTelegramToken ? 'inline-block' : 'none';
+          tokenInput.value = '';
+          tokenInput.focus();
+        } else {
+          secRow.style.display = 'flex';
+          inputGroup.style.display = 'none';
+          tokenInput.value = '';
+        }
+      }
+    }
+
+    // Load AI Configuration
+    async function loadAIConfig() {
+      try {
+        const res = await api.get('/ai/config');
+        const c = res.config || {};
+
+        hasGeminiKey = Boolean(c.has_gemini_key);
+        hasTelegramToken = Boolean(c.has_telegram_token);
+
+        // Gemini UI: Hide key completely when saved
+        const geminiSecRow = document.getElementById('gemini-secure-row');
+        const geminiInputGroup = document.getElementById('gemini-input-group');
+        const geminiBadge = document.getElementById('badge-gemini-status');
+        const geminiCancelBtn = document.getElementById('btn-cancel-gemini-edit');
+
+        if (hasGeminiKey) {
+          if (geminiSecRow) geminiSecRow.style.display = 'flex';
+          if (geminiInputGroup) geminiInputGroup.style.display = 'none';
+          if (geminiBadge) {
+            geminiBadge.textContent = 'Aktif';
+            geminiBadge.className = 'badge badge-active';
+          }
+        } else {
+          if (geminiSecRow) geminiSecRow.style.display = 'none';
+          if (geminiInputGroup) geminiInputGroup.style.display = 'block';
+          if (geminiCancelBtn) geminiCancelBtn.style.display = 'none';
+          if (geminiBadge) {
+            geminiBadge.textContent = 'Belum Diatur';
+            geminiBadge.className = 'badge badge-inactive';
+          }
+        }
+        document.getElementById('ai-gemini-key').value = '';
+
+        if (c.gemini_model) {
+          const modelEl = document.getElementById('ai-gemini-model');
+          if (modelEl) {
+            modelEl.value = c.gemini_model;
+            if (modelEl.tagName === 'SELECT') refreshSelect('ai-gemini-model');
+          }
+        }
+
+        // Telegram UI: Hide token completely when saved
+        const tgSecRow = document.getElementById('telegram-secure-row');
+        const tgInputGroup = document.getElementById('telegram-input-group');
+        const tgBadge = document.getElementById('badge-bot-status');
+        const tgCancelBtn = document.getElementById('btn-cancel-telegram-edit');
+
+        if (hasTelegramToken) {
+          if (tgSecRow) tgSecRow.style.display = 'flex';
+          if (tgInputGroup) tgInputGroup.style.display = 'none';
+          if (tgBadge) {
+            tgBadge.textContent = c.polling_active ? 'Aktif' : 'Tersimpan';
+            tgBadge.className = 'badge badge-active';
+          }
+        } else {
+          if (tgSecRow) tgSecRow.style.display = 'none';
+          if (tgInputGroup) tgInputGroup.style.display = 'block';
+          if (tgCancelBtn) tgCancelBtn.style.display = 'none';
+          if (tgBadge) {
+            tgBadge.textContent = 'Belum Terhubung';
+            tgBadge.className = 'badge badge-inactive';
+          }
+        }
+        document.getElementById('tg-bot-token').value = '';
+
+        document.getElementById('display-bot-username').textContent = c.telegram_bot_username || '';
+        document.getElementById('tg-admin-chat-id').value = c.telegram_admin_chat_id || '';
+
+        // Toggles
+        document.getElementById('toggle-reminder-in').checked = c.ai_auto_reminder_in;
+        document.getElementById('toggle-reminder-out').checked = c.ai_auto_reminder_out;
+        document.getElementById('toggle-reminder-tasks').checked = c.ai_auto_reminder_tasks;
+        document.getElementById('toggle-daily-report').checked = c.ai_daily_report;
+        document.getElementById('time-daily-report').value = c.ai_daily_report_time || '17:30';
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Save AI Config
+    async function saveAIConfig() {
+      const btn = document.getElementById('btn-save-ai-config');
+      const btnGemini = document.getElementById('btn-save-gemini-key');
+      if (btn) { btn.disabled = true; btn.textContent = 'Menyimpan...'; }
+      if (btnGemini) { btnGemini.disabled = true; btnGemini.textContent = 'Menyimpan...'; }
+
+      try {
+        const geminiInput = document.getElementById('ai-gemini-key');
+        const tgInput = document.getElementById('tg-bot-token');
+        const geminiVal = geminiInput ? geminiInput.value.trim() : '';
+        const tgVal = tgInput ? tgInput.value.trim() : '';
+        const modelEl = document.getElementById('ai-gemini-model');
+
+        const body = {
+          gemini_model: modelEl ? modelEl.value : 'gemini-1.5-flash',
+          telegram_admin_chat_id: document.getElementById('tg-admin-chat-id').value.trim(),
+          ai_auto_reminder_in: document.getElementById('toggle-reminder-in').checked,
+          ai_auto_reminder_out: document.getElementById('toggle-reminder-out').checked,
+          ai_auto_reminder_tasks: document.getElementById('toggle-reminder-tasks').checked,
+          ai_daily_report: document.getElementById('toggle-daily-report').checked,
+          ai_daily_report_time: document.getElementById('time-daily-report').value,
+          start_polling: true
+        };
+
+        // Only send keys if user entered new values
+        if (geminiVal && !geminiVal.startsWith('••••')) {
+          body.gemini_api_key = geminiVal;
+        }
+        if (tgVal && !tgVal.startsWith('••••')) {
+          body.telegram_bot_token = tgVal;
+        }
+
+        const res = await api.put('/ai/config', body);
+        showToast(res.message || 'Konfigurasi berhasil disimpan!', 'success');
+        await loadAIConfig();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Simpan Konfigurasi'; }
+        if (btnGemini) { btnGemini.disabled = false; btnGemini.textContent = 'Simpan Key'; }
+      }
+    }
+
+    // Test Gemini Connection
+    async function testGeminiConnection() {
+      const btn = document.getElementById('btn-test-gemini');
+      btn.disabled = true;
+      btn.textContent = 'Menguji...';
+
+      try {
+        const keyInput = document.getElementById('ai-gemini-key');
+        const rawKey = keyInput ? keyInput.value.trim() : '';
+        const keyToSend = (rawKey && !rawKey.startsWith('••••')) ? rawKey : '';
+        const modelEl = document.getElementById('ai-gemini-model');
+        const model = modelEl ? modelEl.value : 'gemini-1.5-flash';
+        const res = await api.post('/ai/test-gemini', { key: keyToSend, model });
+
+        await showConfirm({
+          title: 'Koneksi Gemini AI Berhasil!',
+          message: `Respon Gemini:\n"${res.reply}"`,
+          confirmText: 'Selesai',
+          cancelText: '',
+          danger: false
+        });
+      } catch (err) {
+        showToast('Uji Gemini Gagal: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Uji Koneksi';
+      }
+    }
+
+    // Test Telegram Connection
+    async function testTelegramConnection() {
+      const btn = document.getElementById('btn-test-tg');
+      btn.disabled = true;
+      btn.textContent = 'Menguji...';
+
+      try {
+        const tokenInput = document.getElementById('tg-bot-token');
+        const rawToken = tokenInput ? tokenInput.value.trim() : '';
+        const tokenToSend = (rawToken && !rawToken.startsWith('••••')) ? rawToken : '';
+        const chatId = document.getElementById('tg-admin-chat-id').value.trim();
+        const res = await api.post('/ai/test-telegram', { token: tokenToSend, chat_id: chatId });
+
+        showToast(res.message, 'success');
+        if (res.bot && res.bot.username) {
+          document.getElementById('display-bot-username').textContent = '@' + res.bot.username;
+          document.getElementById('badge-bot-status').textContent = 'Aktif';
+          document.getElementById('badge-bot-status').className = 'badge badge-active';
+        }
+      } catch (err) {
+        showToast('Uji Telegram Gagal: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Uji Bot';
+      }
+    }
+
+    // Trigger Broadcast Reminders
+    async function triggerBroadcast(type) {
+      const typeNames = {
+        attendance: 'Peringatan Presensi Masuk',
+        tasks: 'Pengingat Tugas Aktif',
+        daily_report: 'Laporan Rekap Harian'
+      };
+
+      const confirmed = await showConfirm({
+        title: `Kirim ${typeNames[type]}?`,
+        message: `Kirim notifikasi via Telegram sekarang ke seluruh karyawan yang memenuhi kriteria?`,
+        confirmText: 'Kirim Sekarang',
+        cancelText: 'Batal',
+        danger: false
+      });
+
+      if (!confirmed) return;
+
+      try {
+        showToast('Mengirim notifikasi ke Telegram...', 'info');
+        const res = await api.post('/ai/broadcast', { type });
+        showToast(res.message, 'success');
+        loadLogs();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Load Employee Telegram Pairing List
+    async function loadEmployeesTelegram() {
+      const tbody = document.getElementById('employees-telegram-tbody');
+      const simSelect = document.getElementById('sim-user-select');
+
+      try {
+        const res = await api.get('/ai/employees');
+        const employees = res.employees || [];
+
+        if (employees.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:20px;">Belum ada data karyawan</td></tr>';
+          return;
+        }
+
+        // Populate Table
+        tbody.innerHTML = employees.map(emp => `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar">${getInitials(emp.name)}</div>
+                <div class="user-info">
+                  <div class="user-name">${emp.name}</div>
+                  <div class="user-id">${emp.employee_id}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Divisi & Jabatan">
+              <div><strong>${emp.position || '-'}</strong></div>
+              <div style="font-size:11.5px;color:var(--text-secondary);">${emp.department_name || '-'}</div>
+            </td>
+            <td data-label="Status Telegram">
+              <span class="badge ${emp.is_connected ? 'badge-active' : 'badge-inactive'}">
+                ${emp.is_connected ? 'Terhubung' : 'Belum Hubung'}
+              </span>
+            </td>
+            <td data-label="Chat ID / Username">
+              ${emp.is_connected ? `
+                <div style="font-family:monospace;font-size:12px;">ID: ${emp.telegram_chat_id}</div>
+                ${emp.telegram_username ? `<div style="font-size:11.5px;color:var(--primary);">@${emp.telegram_username.replace('@', '')}</div>` : ''}
+              ` : '<span class="text-muted" style="font-size:12px;">-</span>'}
+            </td>
+            <td class="table-actions-cell" style="text-align:right;">
+              <button class="btn btn-ghost btn-sm" onclick="openEditTelegramModal(${emp.id}, '${escapeHtml(emp.name)}', '${emp.telegram_chat_id || ''}', '${emp.telegram_username || ''}')">
+                ${emp.is_connected ? 'Ubah' : 'Hubungkan'}
+              </button>
+            </td>
+          </tr>
+        `).join('');
+
+        // Populate Simulator Select
+        simSelect.innerHTML = '<option value="">Pilih karyawan...</option>' + employees.map(emp => `
+          <option value="${emp.id}">${emp.name} (${emp.employee_id} - ${emp.position || 'Staf'})</option>
+        `).join('');
+        if (employees.length > 0) {
+          simSelect.selectedIndex = 1;
+        }
+        refreshSelect('sim-user-select');
+
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted" style="padding:20px;color:var(--danger);">${err.message}</td></tr>`;
+      }
+    }
+
+    function openEditTelegramModal(id, name, chatId, username) {
+      document.getElementById('edit-emp-id').value = id;
+      document.getElementById('edit-emp-name').value = name;
+      document.getElementById('edit-emp-chat-id').value = chatId || '';
+      document.getElementById('edit-emp-username').value = username || '';
+      openModal('modal-edit-tg');
+    }
+
+    async function submitEditEmployeeTelegram() {
+      const id = document.getElementById('edit-emp-id').value;
+      const chatId = document.getElementById('edit-emp-chat-id').value.trim();
+      const username = document.getElementById('edit-emp-username').value.trim();
+
+      try {
+        const res = await api.put(`/ai/employees/${id}/telegram`, {
+          telegram_chat_id: chatId,
+          telegram_username: username
+        });
+        showToast(res.message, 'success');
+        closeModal('modal-edit-tg');
+        loadEmployeesTelegram();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Simulator testing
+    async function runSimulation() {
+      const userId = document.getElementById('sim-user-select').value;
+      const messageText = document.getElementById('sim-message-input').value.trim();
+      const responseBox = document.getElementById('sim-response-box');
+
+      if (!userId) return showToast('Pilih karyawan terlebih dahulu', 'warning');
+      if (!messageText) return showToast('Ketik perintah atau pesan uji coba', 'warning');
+
+      responseBox.textContent = 'Memproses simulasi...';
+
+      try {
+        const res = await api.post('/ai/simulate-message', {
+          user_id: parseInt(userId),
+          message_text: messageText
+        });
+
+        // Strip HTML tags for clean plain text display in simulator box
+        const cleanReply = res.bot_reply.replace(/<[^>]*>?/gm, '');
+        responseBox.textContent = cleanReply;
+        showToast('Simulasi berhasil dijalankan!', 'success');
+        loadLogs();
+      } catch (err) {
+        responseBox.textContent = 'Error: ' + err.message;
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Load Bot & AI Activity Logs
+    async function loadLogs() {
+      const container = document.getElementById('bot-logs-container');
+      try {
+        const res = await api.get('/ai/logs');
+        const logs = res.logs || [];
+
+        if (logs.length === 0) {
+          container.innerHTML = '<div class="text-center text-muted" style="padding:24px;">Belum ada aktivitas bot tercatat.</div>';
+          return;
+        }
+
+        container.innerHTML = logs.map(l => {
+          const typeBadge = l.type === 'attendance' ? '📸 Presensi' :
+                            l.type === 'reminder' ? '⏰ Pengingat' :
+                            l.type === 'task_update' ? '✅ Tugas' :
+                            l.type === 'pairing' ? '🔗 Hubung' :
+                            l.type === 'report' ? '📊 Laporan' : '💬 Chat';
+
+          return `
+            <div class="bot-log-item">
+              <span class="bot-log-time">${formatDate(l.created_at)}</span>
+              <span class="badge" style="font-size:11px;padding:2px 8px;">${typeBadge}</span>
+              <div class="bot-log-text">
+                ${l.target_name ? `<strong>${l.target_name}:</strong> ` : ''}
+                ${escapeHtml(l.message)}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="text-center text-muted" style="color:var(--danger);padding:20px;">${err.message}</div>`;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Initialize Page
+    loadAIConfig();
+    loadEmployeesTelegram();
+    loadLogs();
+  </script>
+</body>
+</html>

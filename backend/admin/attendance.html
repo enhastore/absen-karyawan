@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kehadiran - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Buka Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="header-title-box">
+            <h1>Kehadiran</h1>
+            <div class="breadcrumb"><span>Log Presensi Karyawan</span></div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-ghost btn-sm" id="btn-export">Export CSV</button>
+          <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- Filter Bar with theme-adaptive dropdowns -->
+        <div class="filter-bar">
+          <input type="date" class="form-control" id="filter-date">
+          <select class="form-control" id="filter-department">
+            <option value="">Semua Departemen</option>
+          </select>
+          <select class="form-control" id="filter-status">
+            <option value="">Semua Status</option>
+            <option value="present">Hadir</option>
+            <option value="late">Terlambat</option>
+            <option value="absent">Tidak Hadir</option>
+            <option value="leave">Izin</option>
+          </select>
+          <input type="text" class="form-control" id="search-input" placeholder="Cari nama karyawan...">
+        </div>
+
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Data Kehadiran <span id="total-count" class="text-muted" style="font-size:12px;font-weight:400;"></span></h3>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Karyawan</th>
+                  <th>Tanggal</th>
+                  <th>Jam Masuk</th>
+                  <th>Jam Pulang</th>
+                  <th>Status</th>
+                  <th>Durasi Kerja</th>
+                  <th>Lembur</th>
+                </tr>
+              </thead>
+              <tbody id="attendance-tbody">
+                <tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Memuat data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    renderSidebar();
+    setupSidebar('attendance.html');
+    let allAttendance = [];
+    document.getElementById('filter-date').value = new Date().toISOString().split('T')[0];
+
+    async function loadDepartments() {
+      try {
+        const data = await api.get('/departments');
+        document.getElementById('filter-department').innerHTML = '<option value="">Semua Departemen</option>' +
+          (data.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        refreshSelect('filter-department');
+      } catch (err) {}
+    }
+
+    async function loadAttendance() {
+      try {
+        const date = document.getElementById('filter-date').value;
+        const dept = document.getElementById('filter-department').value;
+        const status = document.getElementById('filter-status').value;
+        const search = document.getElementById('search-input').value;
+
+        let url = '/attendance/all?limit=100';
+        if (date) url += `&date=${date}`;
+        if (dept) url += `&department=${dept}`;
+        if (status) url += `&status=${status}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        const data = await api.get(url);
+        allAttendance = data.attendance || [];
+        document.getElementById('total-count').textContent = `(${data.pagination ? data.pagination.total : allAttendance.length} data)`;
+
+        const tbody = document.getElementById('attendance-tbody');
+        if (allAttendance.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Tidak ada catatan kehadiran pada tanggal ini</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = allAttendance.map(a => `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar">${getInitials(a.name)}</div>
+                <div class="user-details">
+                  <div class="name">${a.name}</div>
+                  <div class="emp-id">${a.employee_id}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Tanggal">${formatDate(a.date)}</td>
+            <td data-label="Jam Masuk" style="font-weight:600;">${a.clock_in || '-'}</td>
+            <td data-label="Jam Pulang" style="font-weight:600;">${a.clock_out || '-'}</td>
+            <td data-label="Status Kehadiran">${statusBadge(a.status)}</td>
+            <td data-label="Durasi Kerja">${a.work_hours ? a.work_hours + ' jam' : '-'}</td>
+            <td data-label="Lembur">${a.overtime_hours > 0 ? '<span style="color:var(--warning);font-weight:600;">' + a.overtime_hours + ' jam</span>' : '-'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    document.getElementById('btn-export').addEventListener('click', () => {
+      exportToCSV(allAttendance.map(a => ({
+        ID: a.employee_id,
+        Nama: a.name,
+        Tanggal: a.date,
+        Jam_Masuk: a.clock_in || '',
+        Jam_Pulang: a.clock_out || '',
+        Status: a.status,
+        Jam_Kerja: a.work_hours || 0,
+        Lembur: a.overtime_hours || 0
+      })), 'laporan_kehadiran');
+    });
+
+    document.getElementById('filter-date').addEventListener('change', loadAttendance);
+    document.getElementById('filter-department').addEventListener('change', loadAttendance);
+    document.getElementById('filter-status').addEventListener('change', loadAttendance);
+    document.getElementById('search-input').addEventListener('input', debounce(loadAttendance, 300));
+
+    loadDepartments();
+    loadAttendance();
+  </script>
+</body>
+</html>

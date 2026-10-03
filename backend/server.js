@@ -5,8 +5,15 @@ const path = require('path');
 const { initDatabase } = require('./config/database');
 const { seed } = require('./config/seed');
 
+const fs = require('fs');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Resolve admin path (support both root and backend directory execution)
+const adminPath = fs.existsSync(path.join(__dirname, 'admin'))
+  ? path.join(__dirname, 'admin')
+  : path.join(__dirname, '..', 'admin');
 
 // Middleware
 app.use(cors());
@@ -15,7 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/admin', express.static(path.join(__dirname, '..', 'admin')));
+app.use('/admin', express.static(adminPath));
+app.use(express.static(adminPath));
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -32,8 +40,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Redirect root to admin
+// Serve admin/index.html on root
 app.get('/', (req, res) => {
+  const indexPath = path.join(adminPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
   res.redirect('/admin');
 });
 

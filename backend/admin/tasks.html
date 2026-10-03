@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tugas - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    /* Clean Kanban columns without nested boxes */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .kanban-col {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      min-height: 180px;
+    }
+
+    .kanban-col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .kanban-col-header h4 {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .kanban-col-header .count {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+    }
+
+    .kanban-item {
+      background: var(--bg-item);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .kanban-item:hover {
+      border-color: var(--border-light);
+    }
+
+    .kanban-item-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .kanban-item-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .kanban-item-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .kanban-board {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Buka Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="header-title-box">
+            <h1>Manajemen Tugas</h1>
+            <div class="breadcrumb"><span>Daftar & Penugasan Jobdesk</span></div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-primary" onclick="openAddTask()">+ Tugas Baru</button>
+          <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- Clean Stat Cards -->
+        <div class="stats-grid">
+          <div class="stat-card info">
+            <div class="stat-label">Belum Dikerjakan</div>
+            <div class="stat-value" id="s-todo">-</div>
+          </div>
+          <div class="stat-card warning">
+            <div class="stat-label">Sedang Dikerjakan</div>
+            <div class="stat-value" id="s-progress">-</div>
+          </div>
+          <div class="stat-card success">
+            <div class="stat-label">Selesai</div>
+            <div class="stat-value" id="s-done">-</div>
+          </div>
+          <div class="stat-card danger">
+            <div class="stat-label">Lewat Tenggat</div>
+            <div class="stat-value" id="s-overdue">-</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar with theme-adaptive dropdowns -->
+        <div class="filter-bar">
+          <select class="form-control" id="filter-status">
+            <option value="">Semua Status</option>
+            <option value="todo">Belum Dikerjakan</option>
+            <option value="in_progress">Sedang Dikerjakan</option>
+            <option value="done">Selesai</option>
+          </select>
+          <select class="form-control" id="filter-priority">
+            <option value="">Semua Prioritas</option>
+            <option value="urgent">Mendesak</option>
+            <option value="high">Tinggi</option>
+            <option value="medium">Sedang</option>
+            <option value="low">Rendah</option>
+          </select>
+          <select class="form-control" id="filter-employee">
+            <option value="">Semua Karyawan</option>
+          </select>
+          <input type="text" class="form-control" id="search-input" placeholder="Cari nama tugas...">
+        </div>
+
+        <!-- Kanban Board -->
+        <div class="kanban-board">
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <h4>Belum Dikerjakan</h4>
+              <span class="count" id="k-todo-count">0</span>
+            </div>
+            <div id="kanban-todo"></div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <h4>Sedang Dikerjakan</h4>
+              <span class="count" id="k-progress-count">0</span>
+            </div>
+            <div id="kanban-progress"></div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <h4>Selesai</h4>
+              <span class="count" id="k-done-count">0</span>
+            </div>
+            <div id="kanban-done"></div>
+          </div>
+        </div>
+
+        <!-- Detailed Table -->
+        <div class="data-card">
+          <div class="data-card-header">
+            <h3>Daftar Detail Tugas</h3>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tugas</th>
+                  <th>Ditugaskan Ke</th>
+                  <th>Prioritas</th>
+                  <th>Status</th>
+                  <th>Tenggat</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tasks-tbody">
+                <tr><td colspan="6" class="text-center text-muted" style="padding:28px;">Memuat tugas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="task-modal-title">Buat Tugas Baru</h3>
+        <button class="modal-close" onclick="closeModal('task-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="task-form">
+          <input type="hidden" id="task-edit-id">
+          <div class="form-group">
+            <label for="t-title">Judul Tugas / Jobdesk *</label>
+            <input type="text" class="form-control" id="t-title" placeholder="Contoh: QC 20 Akun TikTok / Upload 3 Video FYP / Kirim Kredensial Order" required>
+          </div>
+          <div class="form-group">
+            <label for="t-description">Uraian / Instruksi Pengerjaan</label>
+            <textarea class="form-control" id="t-description" placeholder="Jelaskan detail jobdesk akun atau produk digital yang harus diselesaikan..."></textarea>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="t-assigned">Ditugaskan Kepada</label>
+              <select class="form-control" id="t-assigned">
+                <option value="">Pilih Karyawan</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="t-department">Departemen</label>
+              <select class="form-control" id="t-department">
+                <option value="">Pilih Departemen</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="t-priority">Prioritas</label>
+              <select class="form-control" id="t-priority">
+                <option value="low">Rendah</option>
+                <option value="medium" selected>Sedang</option>
+                <option value="high">Tinggi</option>
+                <option value="urgent">Mendesak</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="t-deadline">Tenggat Waktu</label>
+              <input type="date" class="form-control" id="t-deadline">
+            </div>
+          </div>
+          <div class="form-group" id="status-group" style="display:none;">
+            <label for="t-status">Status Pengerjaan</label>
+            <select class="form-control" id="t-status">
+              <option value="todo">Belum Dikerjakan</option>
+              <option value="in_progress">Sedang Dikerjakan</option>
+              <option value="done">Selesai</option>
+              <option value="cancelled">Dibatalkan</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('task-modal')">Batal</button>
+        <button class="btn btn-primary" id="btn-save-task">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    renderSidebar();
+    setupSidebar('tasks.html');
+
+    let allTasks = [];
+
+    async function loadOptions() {
+      try {
+        const [depts, users] = await Promise.all([api.get('/departments'), api.get('/users?limit=100')]);
+        document.getElementById('t-department').innerHTML = '<option value="">Pilih Departemen</option>' +
+          (depts.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+
+        const emps = (users.users || []).filter(u => u.role === 'employee');
+        document.getElementById('t-assigned').innerHTML = '<option value="">Pilih Karyawan</option>' +
+          emps.map(u => `<option value="${u.id}">${u.name} (${u.employee_id})</option>`).join('');
+
+        document.getElementById('filter-employee').innerHTML = '<option value="">Semua Karyawan</option>' +
+          emps.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+
+        refreshSelect('t-department');
+        refreshSelect('t-assigned');
+        refreshSelect('filter-employee');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadTasks() {
+      try {
+        const status = document.getElementById('filter-status').value;
+        const priority = document.getElementById('filter-priority').value;
+        const assigned = document.getElementById('filter-employee').value;
+        const search = document.getElementById('search-input').value;
+
+        let url = '/tasks?limit=100';
+        if (status) url += `&status=${status}`;
+        if (priority) url += `&priority=${priority}`;
+        if (assigned) url += `&assigned_to=${assigned}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        const data = await api.get(url);
+        allTasks = data.tasks || [];
+
+        const todo = allTasks.filter(t => t.status === 'todo');
+        const progress = allTasks.filter(t => t.status === 'in_progress');
+        const done = allTasks.filter(t => t.status === 'done');
+
+        document.getElementById('k-todo-count').textContent = todo.length;
+        document.getElementById('k-progress-count').textContent = progress.length;
+        document.getElementById('k-done-count').textContent = done.length;
+
+        // Render Kanban Columns
+        renderKanbanCol('kanban-todo', todo);
+        renderKanbanCol('kanban-progress', progress);
+        renderKanbanCol('kanban-done', done);
+
+        // Render Table
+        const tbody = document.getElementById('tasks-tbody');
+        if (allTasks.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:28px;">Tidak ada tugas ditemukan</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = allTasks.map(t => {
+          const isOverdue = t.deadline && new Date(t.deadline) < new Date() && t.status !== 'done';
+          return `
+            <tr>
+              <td>
+                <div style="font-weight:600;font-size:13px;">${t.title}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${t.description || '-'}</div>
+              </td>
+              <td data-label="Ditugaskan Ke">${t.assigned_name || t.assigned_to_name ? `${t.assigned_name || t.assigned_to_name}` : '<span class="text-muted">Semua</span>'}</td>
+              <td data-label="Prioritas">${priorityBadge(t.priority)}</td>
+              <td data-label="Status">${statusBadge(t.status)}</td>
+              <td data-label="Tenggat">
+                <span>${formatDate(t.deadline)}</span>
+                ${isOverdue ? '<span style="color:var(--danger);font-size:11px;margin-left:4px;font-weight:600;">(Lewat)</span>' : ''}
+              </td>
+              <td class="table-actions-cell">
+                <div class="table-actions">
+                  <button class="btn btn-ghost btn-sm" onclick="editTask(${t.id})">Ubah</button>
+                  <button class="btn btn-ghost btn-sm" onclick="deleteTask(${t.id})" style="color:var(--danger);">Hapus</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderKanbanCol(elementId, tasks) {
+      const container = document.getElementById(elementId);
+      if (tasks.length === 0) {
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px;">Kosong</div>';
+        return;
+      }
+      container.innerHTML = tasks.map(t => `
+        <div class="kanban-item" onclick="editTask(${t.id})">
+          <div class="kanban-item-title">${t.title}</div>
+          ${t.description ? `<div class="kanban-item-desc">${t.description}</div>` : ''}
+          <div class="kanban-item-meta">
+            <span>${t.assigned_name || t.assigned_to_name || 'Semua'}</span>
+            ${priorityBadge(t.priority)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadStats() {
+      try {
+        const data = await api.get('/tasks/summary');
+        document.getElementById('s-todo').textContent = data.todo;
+        document.getElementById('s-progress').textContent = data.in_progress;
+        document.getElementById('s-done').textContent = data.done;
+        document.getElementById('s-overdue').textContent = data.overdue;
+      } catch (err) {}
+    }
+
+    function openAddTask() {
+      document.getElementById('task-modal-title').textContent = 'Buat Tugas Baru';
+      document.getElementById('task-edit-id').value = '';
+      document.getElementById('t-title').value = '';
+      document.getElementById('t-description').value = '';
+      document.getElementById('t-assigned').value = '';
+      document.getElementById('t-department').value = '';
+      document.getElementById('t-priority').value = 'medium';
+      document.getElementById('t-deadline').value = '';
+      document.getElementById('status-group').style.display = 'none';
+      refreshSelect('t-assigned');
+      refreshSelect('t-department');
+      refreshSelect('t-priority');
+      refreshSelect('t-status');
+      openModal('task-modal');
+    }
+
+    async function editTask(id) {
+      const t = allTasks.find(x => x.id === id);
+      if (!t) return;
+      document.getElementById('task-modal-title').textContent = 'Ubah Tugas';
+      document.getElementById('task-edit-id').value = t.id;
+      document.getElementById('t-title').value = t.title;
+      document.getElementById('t-description').value = t.description || '';
+      document.getElementById('t-assigned').value = t.assigned_to || '';
+      document.getElementById('t-department').value = t.department_id || '';
+      document.getElementById('t-priority').value = t.priority;
+      document.getElementById('t-deadline').value = t.deadline ? t.deadline.split('T')[0] : '';
+      document.getElementById('t-status').value = t.status;
+      document.getElementById('status-group').style.display = 'block';
+      refreshSelect('t-assigned');
+      refreshSelect('t-department');
+      refreshSelect('t-priority');
+      refreshSelect('t-status');
+      openModal('task-modal');
+    }
+
+    document.getElementById('btn-save-task').addEventListener('click', async () => {
+      const title = document.getElementById('t-title').value.trim();
+      if (!title) return showToast('Judul tugas harus diisi', 'warning');
+
+      const id = document.getElementById('task-edit-id').value;
+      const body = {
+        title,
+        description: document.getElementById('t-description').value.trim(),
+        assigned_to: document.getElementById('t-assigned').value || null,
+        department_id: document.getElementById('t-department').value || null,
+        priority: document.getElementById('t-priority').value,
+        deadline: document.getElementById('t-deadline').value || null
+      };
+
+      try {
+        if (id) {
+          body.status = document.getElementById('t-status').value;
+          await api.put(`/tasks/${id}`, body);
+          showToast('Tugas berhasil diperbarui', 'success');
+        } else {
+          await api.post('/tasks', body);
+          showToast('Tugas berhasil dibuat', 'success');
+        }
+        closeModal('task-modal');
+        loadTasks();
+        loadStats();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    async function deleteTask(id) {
+      const confirmed = await showConfirm({
+        title: 'Hapus Tugas',
+        message: 'Apakah Anda yakin ingin menghapus tugas ini secara permanen?',
+        confirmText: 'Hapus Tugas',
+        cancelText: 'Batal',
+        danger: true
+      });
+      if (!confirmed) return;
+      try {
+        await api.delete(`/tasks/${id}`);
+        showToast('Tugas berhasil dihapus', 'success');
+        loadTasks();
+        loadStats();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    document.getElementById('filter-status').addEventListener('change', loadTasks);
+    document.getElementById('filter-priority').addEventListener('change', loadTasks);
+    document.getElementById('filter-employee').addEventListener('change', loadTasks);
+    document.getElementById('search-input').addEventListener('input', debounce(loadTasks, 300));
+
+    loadOptions();
+    loadTasks();
+    loadStats();
+  </script>
+</body>
+</html>

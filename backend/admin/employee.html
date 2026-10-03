@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Panel Karyawan - AbsenKu</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <!-- Employee Main Container -->
+  <div class="emp-container">
+    <header class="emp-header">
+      <div class="logo-area">
+        <button type="button" class="btn-sidebar-open" id="btn-toggle-sidebar" onclick="toggleEmpSidebar()" title="Buka Sidebar Pengaturan">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <img src="img/logo-light.png" alt="AbsenKu" class="logo-img" id="header-logo">
+        <div class="brand-text">
+          <h2>AbsenKu</h2>
+          <span class="greeting" id="emp-greeting">Selamat Datang</span>
+        </div>
+      </div>
+      <div class="actions-area">
+        <div class="user-info" onclick="openEmpSidebar()" style="cursor:pointer;" title="Buka Profil & Pengaturan">
+          <div class="user-name" id="emp-name">-</div>
+          <div class="user-pos" id="emp-position">-</div>
+        </div>
+        <button type="button" class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
+      </div>
+    </header>
+
+    <!-- Clock Section -->
+    <section class="clock-section">
+      <div class="clock-date" id="display-date">--</div>
+      <div class="clock-time" id="display-time">--:--:--</div>
+      <div class="clock-status" id="clock-status">Memeriksa status kehadiran...</div>
+      <div class="clock-buttons">
+        <button class="clock-btn clock-btn-in" id="btn-clock-in" onclick="clockIn()">
+          Catat Kehadiran
+        </button>
+        <button class="clock-btn clock-btn-out" id="btn-clock-out" onclick="clockOut()" disabled>
+          Selesai Bekerja
+        </button>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('tasks', this)">Tugas Saya</button>
+      <button class="tab-btn" onclick="switchTab('history', this)">Riwayat Hadir</button>
+      <button class="tab-btn" onclick="switchTab('leave', this)">Izin & Cuti</button>
+    </nav>
+
+    <!-- Tasks -->
+    <div class="tab-content active" id="tab-tasks">
+      <div id="task-list"></div>
+    </div>
+
+    <!-- History -->
+    <div class="tab-content" id="tab-history">
+      <div class="data-card">
+        <div id="history-list"></div>
+      </div>
+    </div>
+
+    <!-- Leave -->
+    <div class="tab-content" id="tab-leave">
+      <div class="data-card mb-2">
+        <div class="data-card-header">
+          <h3>Ajukan Izin atau Cuti</h3>
+        </div>
+        <div class="data-card-body">
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="l-type">Jenis Pengajuan</label>
+              <select class="form-control" id="l-type">
+                <option value="sick">Sakit</option>
+                <option value="annual">Cuti Tahunan</option>
+                <option value="personal">Keperluan Pribadi</option>
+                <option value="other">Lainnya</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="l-reason">Keterangan / Alasan</label>
+              <input type="text" class="form-control" id="l-reason" placeholder="Contoh: Demam, kontrol dokter, dll.">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="l-start">Tanggal Mulai</label>
+              <input type="date" class="form-control" id="l-start">
+            </div>
+            <div class="form-group">
+              <label for="l-end">Tanggal Selesai</label>
+              <input type="date" class="form-control" id="l-end">
+            </div>
+          </div>
+          <div class="mt-1" style="text-align: right;">
+            <button class="btn btn-primary" id="btn-submit-leave">Kirim Pengajuan</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="data-card">
+        <div class="data-card-header">
+          <h3>Riwayat Pengajuan Cuti</h3>
+        </div>
+        <div id="leave-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- SIDEBAR DRAWER: PENGATURAN & KARTU ID KARYAWAN -->
+  <!-- ============================================== -->
+  <div class="emp-sidebar-backdrop" id="emp-sidebar-backdrop" onclick="closeEmpSidebar()"></div>
+
+  <aside class="emp-sidebar-drawer" id="emp-sidebar-drawer" aria-label="Pengaturan Karyawan">
+    <!-- Sidebar Header -->
+    <div class="emp-sidebar-header">
+      <div class="title-area">
+        <div class="header-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </div>
+        <div>
+          <h3>Pengaturan Akun</h3>
+          <span class="subtitle">Identitas & Profil Karyawan</span>
+        </div>
+      </div>
+      <button type="button" class="emp-sidebar-close" id="btn-close-sidebar" onclick="closeEmpSidebar()" title="Tutup Sidebar">✕</button>
+    </div>
+
+    <!-- Sidebar Content -->
+    <div class="emp-sidebar-content">
+      <!-- 1. Digital ID Card Badge -->
+      <div class="id-card-wrapper">
+        <div class="id-card">
+          <div class="id-card-top">
+            <div class="id-card-chip">
+              <span class="chip-glow"></span>
+              <span>KARTU IDENTITAS RESMI</span>
+            </div>
+            <span class="badge badge-success" id="idcard-status">● Karyawan Aktif</span>
+          </div>
+          <div class="id-card-body">
+            <div class="id-avatar" id="idcard-avatar">--</div>
+            <div class="id-info">
+              <div class="id-name" id="idcard-name">-</div>
+              <div class="id-role" id="idcard-position">-</div>
+              <div class="id-dept" id="idcard-dept">-</div>
+            </div>
+          </div>
+          <div class="id-card-bottom">
+            <div class="id-number-box">
+              <div>
+                <div class="id-label">ID Karyawan</div>
+                <div class="id-code" id="idcard-empid">-</div>
+              </div>
+              <button type="button" class="btn-copy-id" onclick="copyEmployeeId()" title="Salin ID Karyawan">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span id="copy-btn-text">Salin ID</span>
+              </button>
+            </div>
+            <div class="id-meta-grid">
+              <div>
+                <span class="meta-label">Email Akun</span>
+                <span class="meta-val" id="idcard-email">-</span>
+              </div>
+              <div>
+                <span class="meta-label">No. Telepon / WA</span>
+                <span class="meta-val" id="idcard-phone">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Form Edit Profil & Kontak -->
+      <div class="data-card mb-2">
+        <div class="data-card-header">
+          <h3>Informasi Profil Karyawan</h3>
+        </div>
+        <div class="data-card-body">
+          <form id="form-edit-profile" onsubmit="handleSaveProfile(event)">
+            <div class="form-group">
+              <label for="prof-empid">ID Karyawan (Sistem)</label>
+              <input type="text" class="form-control readonly-highlight" id="prof-empid" readonly title="Diberikan oleh Administrator">
+            </div>
+            <div class="form-group">
+              <label for="prof-name">Nama Lengkap</label>
+              <input type="text" class="form-control" id="prof-name" placeholder="Nama lengkap Anda" required>
+            </div>
+            <div class="form-group">
+              <label for="prof-email">Alamat Email</label>
+              <input type="email" class="form-control readonly-highlight" id="prof-email" readonly title="Email resmi akun">
+            </div>
+            <div class="form-group">
+              <label for="prof-phone">Nomor Telepon / WhatsApp</label>
+              <input type="tel" class="form-control" id="prof-phone" placeholder="Contoh: 081234567890">
+            </div>
+            <div class="mt-1">
+              <button type="submit" class="btn btn-primary btn-block" id="btn-save-profile">Simpan Profil & Kontak</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 3. Form Keamanan / Ganti Password -->
+      <div class="data-card mb-2">
+        <div class="data-card-header">
+          <h3>Keamanan & Ganti Kata Sandi</h3>
+        </div>
+        <div class="data-card-body">
+          <form id="form-change-pwd" onsubmit="handleChangePassword(event)">
+            <div class="form-group">
+              <label for="pwd-current">Kata Sandi Saat Ini</label>
+              <input type="password" class="form-control" id="pwd-current" placeholder="Masukkan kata sandi saat ini" required autocomplete="current-password">
+            </div>
+            <div class="form-group">
+              <label for="pwd-new">Kata Sandi Baru</label>
+              <input type="password" class="form-control" id="pwd-new" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label for="pwd-confirm">Konfirmasi Kata Sandi Baru</label>
+              <input type="password" class="form-control" id="pwd-confirm" placeholder="Ulangi kata sandi baru" required minlength="6" autocomplete="new-password">
+            </div>
+            <div class="mt-1">
+              <button type="submit" class="btn btn-ghost btn-block" id="btn-save-pwd">Perbarui Kata Sandi</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 4. Preferensi Sistem & Tampilan -->
+      <div class="data-card mb-2">
+        <div class="data-card-header">
+          <h3>Preferensi Sistem</h3>
+        </div>
+        <div class="data-card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 12px;border-bottom:1px solid var(--border);">
+            <div>
+              <div style="font-weight:600;font-size:13px;color:var(--text-primary);">Tema Tampilan</div>
+              <div style="font-size:11.5px;color:var(--text-muted);">Pilih mode terang / gelap</div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="toggleTheme()">
+              <span>Ubah Tema</span>
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 4px;">
+            <div>
+              <div style="font-weight:600;font-size:13px;color:var(--text-primary);">Koneksi Server</div>
+              <div style="font-size:11.5px;color:var(--text-muted);">🟢 Backend Terhubung</div>
+            </div>
+            <span class="badge badge-success" style="font-size:11px;">Aktif</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="emp-sidebar-footer">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeEmpSidebar()" style="display:flex;align-items:center;gap:6px;">
+        <span>✕ Tutup</span>
+      </button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="handleLogout()" style="display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        <span>Keluar Akun</span>
+      </button>
+    </div>
+  </aside>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const user = checkAuth();
+    if (user) {
+      document.getElementById('emp-name').textContent = user.name;
+      document.getElementById('emp-position').textContent = user.position || (user.role === 'admin' ? 'Administrator' : 'Karyawan');
+      const hour = new Date().getHours();
+      document.getElementById('emp-greeting').textContent = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
+    }
+
+    // Set today's date for leave pickers
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('l-start').value = todayStr;
+    document.getElementById('l-end').value = todayStr;
+
+    function handleLogout() {
+      api.clearToken();
+      window.location.href = (typeof getAppUrl === 'function' ? getAppUrl('index.html') : 'index.html');
+    }
+
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+
+    // Sidebar Drawer Controls
+    function openEmpSidebar() {
+      const drawer = document.getElementById('emp-sidebar-drawer');
+      const backdrop = document.getElementById('emp-sidebar-backdrop');
+      if (drawer) drawer.classList.add('active');
+      if (backdrop) backdrop.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      loadProfileData();
+    }
+
+    function closeEmpSidebar() {
+      const drawer = document.getElementById('emp-sidebar-drawer');
+      const backdrop = document.getElementById('emp-sidebar-backdrop');
+      if (drawer) drawer.classList.remove('active');
+      if (backdrop) backdrop.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function toggleEmpSidebar() {
+      const drawer = document.getElementById('emp-sidebar-drawer');
+      if (drawer && drawer.classList.contains('active')) {
+        closeEmpSidebar();
+      } else {
+        openEmpSidebar();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeEmpSidebar();
+    });
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('display-time').textContent = now.toLocaleTimeString('id-ID');
+      document.getElementById('display-date').textContent = now.toLocaleDateString('id-ID', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    async function checkToday() {
+      try {
+        const data = await api.get('/attendance/today');
+        const btnIn = document.getElementById('btn-clock-in');
+        const btnOut = document.getElementById('btn-clock-out');
+        const status = document.getElementById('clock-status');
+
+        if (data.attendance) {
+          const a = data.attendance;
+          if (a.clock_in && !a.clock_out) {
+            btnIn.disabled = true;
+            btnOut.disabled = false;
+            status.innerHTML = `<span style="color:var(--success);font-weight:600;">Masuk pukul ${a.clock_in}</span> · ${statusBadge(a.status)}`;
+          } else if (a.clock_in && a.clock_out) {
+            btnIn.disabled = true;
+            btnOut.disabled = true;
+            status.innerHTML = `Masuk ${a.clock_in} · Pulang ${a.clock_out} · <strong>${a.work_hours || 0} jam kerja</strong>`;
+          }
+        } else {
+          btnIn.disabled = false;
+          btnOut.disabled = true;
+          status.innerHTML = '<span>Belum mencatat kehadiran hari ini</span>';
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function clockIn() {
+      const btn = document.getElementById('btn-clock-in');
+      btn.disabled = true;
+      try {
+        const data = await api.post('/attendance/clock-in', {});
+        showToast(data.message, 'success');
+        checkToday();
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+      }
+    }
+
+    async function clockOut() {
+      const confirmed = await showConfirm({
+        title: 'Konfirmasi Waktu Pulang',
+        message: 'Selesaikan jam kerja dan catat waktu pulang sekarang?',
+        confirmText: 'Selesai Kerja & Catat Pulang',
+        cancelText: 'Kembali Bekerja',
+        danger: false
+      });
+      if (!confirmed) return;
+      const btn = document.getElementById('btn-clock-out');
+      btn.disabled = true;
+      try {
+        const data = await api.post('/attendance/clock-out', {});
+        showToast(data.message, 'success');
+        checkToday();
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+      }
+    }
+
+    function switchTab(tab, el) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const targetTab = document.getElementById(`tab-${tab}`);
+      if (targetTab) targetTab.classList.add('active');
+      if (el) el.classList.add('active');
+
+      if (tab === 'tasks') loadMyTasks();
+      if (tab === 'history') loadHistory();
+      if (tab === 'leave') loadMyLeaves();
+    }
+
+    async function loadMyTasks() {
+      try {
+        const data = await api.get('/tasks?limit=50');
+        const container = document.getElementById('task-list');
+
+        if (!data.tasks || data.tasks.length === 0) {
+          container.innerHTML = '<div class="empty-state"><h3>Tidak Ada Tugas</h3><p>Saat ini belum ada tugas yang dibebankan kepada Anda</p></div>';
+          return;
+        }
+
+        container.innerHTML = data.tasks.map(t => {
+          const isOverdue = t.deadline && new Date(t.deadline) < new Date() && t.status !== 'done';
+          return `
+            <div class="task-item">
+              <div class="task-item-header">
+                <div>
+                  <h4>${t.title}</h4>
+                  <p>${t.description || 'Tidak ada catatan tambahan'}</p>
+                </div>
+                ${priorityBadge(t.priority)}
+              </div>
+              <div class="task-item-footer">
+                <div>
+                  <span>${t.deadline ? 'Tenggat: ' + formatDate(t.deadline) : 'Tanpa tenggat'}</span>
+                  ${isOverdue ? ' · <span style="color:var(--danger);font-weight:600;">Lewat tenggat</span>' : ''}
+                </div>
+                <div class="d-flex gap-1 align-center">
+                  ${statusBadge(t.status)}
+                  ${t.status !== 'done' ? `
+                    <select class="form-control" style="width:auto;padding:5px 28px 5px 8px;font-size:11px;" onchange="updateTaskStatus(${t.id}, this.value)">
+                      <option value="" disabled selected>Ubah status</option>
+                      <option value="todo">Belum Dikerjakan</option>
+                      <option value="in_progress">Sedang Dikerjakan</option>
+                      <option value="done">Selesai</option>
+                    </select>
+                  ` : ''}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+
+        initCustomSelects(container);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function updateTaskStatus(id, status) {
+      try {
+        await api.put(`/tasks/${id}`, { status });
+        showToast('Status tugas diperbarui', 'success');
+        loadMyTasks();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const data = await api.get('/attendance/history?limit=30');
+        const container = document.getElementById('history-list');
+
+        if (!data.attendance || data.attendance.length === 0) {
+          container.innerHTML = '<div class="empty-state"><h3>Belum Ada Riwayat</h3><p>Catatan kehadiran akan muncul di sini</p></div>';
+          return;
+        }
+
+        container.innerHTML = data.attendance.map(a => `
+          <div class="history-item">
+            <div>
+              <div class="history-date">${formatDate(a.date)}</div>
+              <div class="history-detail">Masuk: ${a.clock_in || '-'} · Pulang: ${a.clock_out || '-'} ${a.work_hours ? `· ${a.work_hours} jam` : ''}</div>
+            </div>
+            ${statusBadge(a.status)}
+          </div>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    document.getElementById('btn-submit-leave').addEventListener('click', async () => {
+      const type = document.getElementById('l-type').value;
+      const reason = document.getElementById('l-reason').value;
+      const start_date = document.getElementById('l-start').value;
+      const end_date = document.getElementById('l-end').value;
+
+      if (!start_date || !end_date) return showToast('Pilih rentang tanggal pengajuan', 'warning');
+
+      try {
+        await api.post('/leaves', { type, reason, start_date, end_date });
+        showToast('Pengajuan cuti berhasil dikirim', 'success');
+        document.getElementById('l-reason').value = '';
+        loadMyLeaves();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    async function loadMyLeaves() {
+      try {
+        const data = await api.get('/leaves?limit=20');
+        const container = document.getElementById('leave-list');
+        const typeLabels = { sick: 'Sakit', annual: 'Cuti Tahunan', personal: 'Keperluan Pribadi', other: 'Lainnya' };
+
+        if (!data.leaves || data.leaves.length === 0) {
+          container.innerHTML = '<div class="empty-state"><h3>Belum Ada Pengajuan</h3><p>Riwayat pengajuan izin dan cuti akan tampil di sini</p></div>';
+          return;
+        }
+
+        container.innerHTML = data.leaves.map(l => `
+          <div class="history-item">
+            <div>
+              <div class="history-date">${typeLabels[l.type] || l.type}</div>
+              <div class="history-detail">${formatDate(l.start_date)} s/d ${formatDate(l.end_date)} ${l.reason ? '· ' + l.reason : ''}</div>
+            </div>
+            ${statusBadge(l.status)}
+          </div>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Profile & Settings Helpers
+    let currentEmployeeId = '';
+
+    function getInitials(name) {
+      if (!name) return '??';
+      const parts = name.trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    async function loadProfileData() {
+      try {
+        const res = await api.get('/auth/me');
+        if (!res || !res.user) return;
+        const u = res.user;
+        currentEmployeeId = u.employee_id || '';
+
+        // Update header
+        document.getElementById('emp-name').textContent = u.name;
+        document.getElementById('emp-position').textContent = u.position || (u.role === 'admin' ? 'Administrator' : 'Karyawan');
+
+        // Update ID Card
+        document.getElementById('idcard-name').textContent = u.name;
+        document.getElementById('idcard-position').textContent = u.position || '-';
+        document.getElementById('idcard-dept').textContent = u.department_name ? 'Departemen: ' + u.department_name : 'Departemen Umum';
+        document.getElementById('idcard-empid').textContent = u.employee_id || '-';
+        document.getElementById('idcard-email').textContent = u.email || '-';
+        document.getElementById('idcard-phone').textContent = u.phone || 'Belum diatur';
+        document.getElementById('idcard-avatar').textContent = getInitials(u.name);
+
+        // Update form inputs
+        document.getElementById('prof-empid').value = u.employee_id || '-';
+        document.getElementById('prof-email').value = u.email || '-';
+        document.getElementById('prof-name').value = u.name || '';
+        document.getElementById('prof-phone').value = u.phone || '';
+      } catch (err) {
+        console.error('Gagal memuat profil:', err);
+      }
+    }
+
+    async function copyEmployeeId() {
+      if (!currentEmployeeId) return;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(currentEmployeeId);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = currentEmployeeId;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        showToast('ID Karyawan (' + currentEmployeeId + ') berhasil disalin!', 'success');
+        const btnText = document.getElementById('copy-btn-text');
+        if (btnText) {
+          btnText.textContent = 'Tersalin! ✓';
+          setTimeout(() => { btnText.textContent = 'Salin ID'; }, 2000);
+        }
+      } catch (err) {
+        showToast('Gagal menyalin ID', 'error');
+      }
+    }
+
+    async function handleSaveProfile(e) {
+      e.preventDefault();
+      const name = document.getElementById('prof-name').value.trim();
+      const phone = document.getElementById('prof-phone').value.trim();
+      const btn = document.getElementById('btn-save-profile');
+
+      if (!name) return showToast('Nama lengkap tidak boleh kosong', 'warning');
+
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+
+      try {
+        const res = await api.put('/auth/profile', { name, phone });
+        showToast(res.message || 'Profil berhasil disimpan!', 'success');
+        api.setUser(res.user);
+        await loadProfileData();
+      } catch (err) {
+        showToast(err.message || 'Gagal menyimpan profil', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Profil & Kontak';
+      }
+    }
+
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      const current_password = document.getElementById('pwd-current').value;
+      const new_password = document.getElementById('pwd-new').value;
+      const confirm_password = document.getElementById('pwd-confirm').value;
+      const btn = document.getElementById('btn-save-pwd');
+
+      if (new_password !== confirm_password) {
+        return showToast('Konfirmasi kata sandi baru tidak cocok', 'warning');
+      }
+      if (new_password.length < 6) {
+        return showToast('Kata sandi baru minimal 6 karakter', 'warning');
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Memperbarui...';
+
+      try {
+        const res = await api.put('/auth/change-password', { current_password, new_password });
+        showToast(res.message || 'Kata sandi berhasil diperbarui!', 'success');
+        document.getElementById('form-change-pwd').reset();
+      } catch (err) {
+        showToast(err.message || 'Gagal mengubah kata sandi', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Perbarui Kata Sandi';
+      }
+    }
+
+    // Initial load
+    checkToday();
+    loadMyTasks();
+    loadProfileData();
+  </script>
+</body>
+</html>
