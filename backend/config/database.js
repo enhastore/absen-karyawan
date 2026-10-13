@@ -80,6 +80,8 @@ async function initDatabase() {
       status TEXT DEFAULT 'present',
       work_hours REAL,
       overtime_hours REAL DEFAULT 0,
+      accounts_created INTEGER DEFAULT 0,
+      work_report TEXT,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id),
@@ -182,6 +184,19 @@ async function initDatabase() {
     }
   } catch(e) {
     console.warn("Notice checking telegram columns:", e.message);
+  }
+
+  try {
+    const attInfo = db.exec("PRAGMA table_info(attendance)");
+    const attCols = attInfo.length > 0 ? attInfo[0].values.map(v => v[1]) : [];
+    if (!attCols.includes('accounts_created')) {
+      db.run("ALTER TABLE attendance ADD COLUMN accounts_created INTEGER DEFAULT 0");
+    }
+    if (!attCols.includes('work_report')) {
+      db.run("ALTER TABLE attendance ADD COLUMN work_report TEXT");
+    }
+  } catch(e) {
+    console.warn("Notice checking attendance columns:", e.message);
   }
 
   saveDatabase();

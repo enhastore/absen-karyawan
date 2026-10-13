@@ -822,6 +822,8 @@ Halo <b>${userName}</b>, Anda memiliki <b>${tasks.length} tugas aktif</b> yang p
 
     const doneTasksToday = dbHelper.prepare('SELECT COUNT(*) as count FROM tasks WHERE date(completed_at) = ?').get(today).count;
     const pendingTasks = dbHelper.prepare('SELECT COUNT(*) as count FROM tasks WHERE status != "done" AND status != "cancelled"').get().count;
+    const totalAccountsRow = dbHelper.prepare('SELECT SUM(accounts_created) as count FROM attendance WHERE date = ?').get(today);
+    const totalAccountsToday = (totalAccountsRow && totalAccountsRow.count) ? totalAccountsRow.count : 0;
 
     let reportMsg = `
 📊 <b>LAPORAN HARIAN OPERASIONAL & PRESENSI</b>
@@ -835,7 +837,8 @@ Halo <b>${userName}</b>, Anda memiliki <b>${tasks.length} tugas aktif</b> yang p
 • Terlambat: <b>${lateCount} orang</b>
 • Belum Hadir / Cuti: <b>${absentCount} orang</b>
 
-📋 <b>Aktivitas Jobdesk & Tugas:</b>
+📋 <b>Aktivitas & Hasil Pekerjaan:</b>
+• Total Akun Dikerjakan: <b>${totalAccountsToday} akun</b>
 • Tugas Selesai Hari Ini: <b>${doneTasksToday} tugas</b>
 • Tugas Masih Berjalan: <b>${pendingTasks} tugas</b>
 ━━━━━━━━━━━━━━━━━━━━━

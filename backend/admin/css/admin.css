@@ -2444,6 +2444,88 @@ body.sidebar-collapsed .main-content {
   transform: translateY(0);
 }
 
+/* ========== WORK REPORT & CLOCK-OUT MODAL ========== */
+.work-report-modal-card {
+  max-width: 480px;
+  width: 95%;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+}
 
+.account-input-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
+.account-input-stepper .btn-stepper {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
 
+.account-input-stepper .btn-stepper:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-glow);
+}
+
+.account-input-stepper .btn-stepper:active {
+  transform: scale(0.94);
+}
+
+.account-stepper-input {
+  flex: 1;
+  height: 44px;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.chip-preset {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip-preset:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-glow);
+  transform: translateY(-1px);
+}
+
+.clock-status-report-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary-muted);
+  color: var(--primary-deep);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}

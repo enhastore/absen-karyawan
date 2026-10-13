@@ -284,6 +284,71 @@
     </div>
   </aside>
 
+  <!-- ============================================== -->
+  <!-- MODAL: LAPORAN HASIL KERJA & PRESENSI PULANG   -->
+  <!-- ============================================== -->
+  <div class="confirm-dialog-overlay" id="modal-clock-out">
+    <div class="confirm-dialog-card work-report-modal-card" role="dialog" aria-modal="true">
+      <div class="confirm-dialog-header" style="align-items: flex-start; justify-content: space-between;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width:42px;height:42px;border-radius:12px;background:var(--primary-muted);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              <path d="m9 14 2 2 4-4"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="confirm-dialog-title" style="font-size:16px;font-weight:700;margin:0;">Laporan Selesai Kerja & Akun</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin:3px 0 0 0;line-height:1.4;">Laporkan jumlah akun yang berhasil dikerjakan hari ini sebelum mencatat waktu pulang.</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="closeClockOutModal()" title="Batal" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 6px;line-height:1;">✕</button>
+      </div>
+
+      <form id="form-clock-out" onsubmit="handleClockOutSubmit(event)" style="margin-top:16px;">
+        <!-- Input Jumlah Akun -->
+        <div class="form-group" style="margin-bottom:14px;">
+          <label for="out-account-count" style="display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:13px;margin-bottom:6px;">
+            <span>Jumlah Akun Dikerjakan <span style="color:var(--danger)">*</span></span>
+            <span style="font-size:11.5px;color:var(--primary);font-weight:600;">Akun Selesai</span>
+          </label>
+          <div class="account-input-stepper">
+            <button type="button" class="btn-stepper" onclick="stepAccountCount(-1)" title="Kurangi 1">-</button>
+            <input type="number" id="out-account-count" class="form-control account-stepper-input" min="0" value="0" placeholder="0" required>
+            <button type="button" class="btn-stepper" onclick="stepAccountCount(1)" title="Tambah 1">+</button>
+          </div>
+          <!-- Quick Preset Chips -->
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;color:var(--text-muted);margin-right:2px;">Cepat:</span>
+            <button type="button" class="chip-preset" onclick="setAccountCountPreset(5)">+5</button>
+            <button type="button" class="chip-preset" onclick="setAccountCountPreset(10)">+10</button>
+            <button type="button" class="chip-preset" onclick="setAccountCountPreset(25)">+25</button>
+            <button type="button" class="chip-preset" onclick="setAccountCountPreset(50)">+50</button>
+            <button type="button" class="chip-preset" onclick="resetAccountCount()" style="color:var(--text-muted);">Reset (0)</button>
+          </div>
+        </div>
+
+        <!-- Input Keterangan / Rincian Pekerjaan -->
+        <div class="form-group" style="margin-bottom:18px;">
+          <label for="out-account-notes" style="font-weight:600;font-size:13px;display:block;margin-bottom:6px;">
+            Keterangan / Rincian Akun <span style="font-size:11px;font-weight:400;color:var(--text-muted);">(Opsional)</span>
+          </label>
+          <textarea id="out-account-notes" class="form-control" rows="3" placeholder="Contoh: Akun Gmail 15 pcs, TikTok 10 pcs (atau catatan jika ada kendala)" style="resize:vertical;font-size:12.5px;line-height:1.45;"></textarea>
+        </div>
+
+        <!-- Tombol Aksi -->
+        <div class="confirm-dialog-actions" style="border-top:1px solid var(--border);padding-top:14px;">
+          <button type="button" class="btn btn-ghost" onclick="closeClockOutModal()">Kembali Bekerja</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-clock-out" style="display:flex;align-items:center;gap:6px;font-weight:600;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Kirim & Selesai Pulang</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
   <script src="js/api.js"></script>
@@ -367,7 +432,16 @@
           } else if (a.clock_in && a.clock_out) {
             btnIn.disabled = true;
             btnOut.disabled = true;
-            status.innerHTML = `Masuk ${a.clock_in} · Pulang ${a.clock_out} · <strong>${a.work_hours || 0} jam kerja</strong>`;
+            const accounts = (a.accounts_created !== null && a.accounts_created !== undefined) ? a.accounts_created : 0;
+            const reportBadge = `<span class="clock-status-report-badge">🎯 <strong>${accounts}</strong> Akun Dikerjakan</span>`;
+            const reportNote = a.work_report ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;max-width:340px;line-height:1.4;word-break:break-word;"><em>"${escapeHtml(a.work_report)}"</em></div>` : '';
+            status.innerHTML = `
+              <div>Masuk ${a.clock_in} · Pulang ${a.clock_out} · <strong>${a.work_hours || 0} jam kerja</strong></div>
+              <div style="display:flex;flex-direction:column;align-items:center;margin-top:2px;">
+                ${reportBadge}
+                ${reportNote}
+              </div>
+            `;
           }
         } else {
           btnIn.disabled = false;
@@ -392,25 +466,89 @@
       }
     }
 
-    async function clockOut() {
-      const confirmed = await showConfirm({
-        title: 'Konfirmasi Waktu Pulang',
-        message: 'Selesaikan jam kerja dan catat waktu pulang sekarang?',
-        confirmText: 'Selesai Kerja & Catat Pulang',
-        cancelText: 'Kembali Bekerja',
-        danger: false
-      });
-      if (!confirmed) return;
-      const btn = document.getElementById('btn-clock-out');
-      btn.disabled = true;
+    // Modal & Clock Out Handlers
+    function clockOut() {
+      openClockOutModal();
+    }
+
+    function openClockOutModal() {
+      const modal = document.getElementById('modal-clock-out');
+      if (!modal) return;
+      document.getElementById('out-account-count').value = '0';
+      document.getElementById('out-account-notes').value = '';
+      modal.classList.add('active');
+      setTimeout(() => {
+        const input = document.getElementById('out-account-count');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }, 100);
+    }
+
+    function closeClockOutModal() {
+      const modal = document.getElementById('modal-clock-out');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function stepAccountCount(delta) {
+      const input = document.getElementById('out-account-count');
+      if (!input) return;
+      let val = parseInt(input.value, 10) || 0;
+      val = Math.max(0, val + delta);
+      input.value = val;
+    }
+
+    function setAccountCountPreset(addAmount) {
+      const input = document.getElementById('out-account-count');
+      if (!input) return;
+      let val = parseInt(input.value, 10) || 0;
+      input.value = val + addAmount;
+    }
+
+    function resetAccountCount() {
+      const input = document.getElementById('out-account-count');
+      if (input) input.value = 0;
+    }
+
+    async function handleClockOutSubmit(e) {
+      e.preventDefault();
+      const countInput = document.getElementById('out-account-count');
+      const notesInput = document.getElementById('out-account-notes');
+      const submitBtn = document.getElementById('btn-submit-clock-out');
+
+      const accountsCreated = parseInt(countInput.value, 10) || 0;
+      const workReport = notesInput.value.trim();
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Menyimpan...</span>';
+
       try {
-        const data = await api.post('/attendance/clock-out', {});
-        showToast(data.message, 'success');
+        const data = await api.post('/attendance/clock-out', {
+          accounts_created: accountsCreated,
+          work_report: workReport
+        });
+        showToast(data.message || 'Presensi pulang & laporan berhasil dicatat!', 'success');
+        closeClockOutModal();
         checkToday();
+        loadHistory();
       } catch (err) {
-        showToast(err.message, 'error');
-        btn.disabled = false;
+        showToast(err.message || 'Gagal mencatat jam pulang', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Kirim & Selesai Pulang</span>
+        `;
       }
+    }
+
+    // Close modal on backdrop click or Escape
+    const clockOutModalEl = document.getElementById('modal-clock-out');
+    if (clockOutModalEl) {
+      clockOutModalEl.addEventListener('click', (e) => {
+        if (e.target === clockOutModalEl) closeClockOutModal();
+      });
     }
 
     function switchTab(tab, el) {
@@ -492,15 +630,27 @@
           return;
         }
 
-        container.innerHTML = data.attendance.map(a => `
-          <div class="history-item">
-            <div>
-              <div class="history-date">${formatDate(a.date)}</div>
-              <div class="history-detail">Masuk: ${a.clock_in || '-'} · Pulang: ${a.clock_out || '-'} ${a.work_hours ? `· ${a.work_hours} jam` : ''}</div>
+        container.innerHTML = data.attendance.map(a => {
+          const accountsBadge = (a.clock_out)
+            ? `<span class="badge badge-primary" style="font-size:11px;padding:2px 8px;font-weight:600;">📦 ${a.accounts_created || 0} Akun</span>`
+            : '';
+          const reportSnippet = a.work_report
+            ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.35;word-break:break-word;">📝 ${escapeHtml(a.work_report)}</div>`
+            : '';
+          return `
+            <div class="history-item">
+              <div style="flex:1;">
+                <div class="history-date" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span>${formatDate(a.date)}</span>
+                  ${accountsBadge}
+                </div>
+                <div class="history-detail">Masuk: ${a.clock_in || '-'} · Pulang: ${a.clock_out || '-'} ${a.work_hours ? `· ${a.work_hours} jam` : ''}</div>
+                ${reportSnippet}
+              </div>
+              <div style="margin-left:10px;flex-shrink:0;">${statusBadge(a.status)}</div>
             </div>
-            ${statusBadge(a.status)}
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } catch (err) {
         showToast(err.message, 'error');
       }

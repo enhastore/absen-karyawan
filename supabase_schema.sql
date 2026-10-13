@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS attendance (
   status TEXT DEFAULT 'present',
   work_hours DOUBLE PRECISION,
   overtime_hours DOUBLE PRECISION DEFAULT 0,
+  accounts_created INTEGER DEFAULT 0,
+  work_report TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, date)

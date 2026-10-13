@@ -59,8 +59,14 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), (req, res) 
     if (!existing || !existing.clock_in) return res.status(400).json({ error: 'Anda belum mencatat jam masuk hari ini.' });
     if (existing.clock_out) return res.status(400).json({ error: 'Anda sudah mencatat jam pulang hari ini.' });
 
-    const { notes } = req.body;
+    const { notes, work_report, accounts_created } = req.body;
     const photo = req.file ? `/uploads/attendance/${req.file.filename}` : null;
+    const accountsCount = (accounts_created !== undefined && accounts_created !== null && accounts_created !== '')
+      ? Math.max(0, parseInt(accounts_created, 10) || 0)
+      : 0;
+    const reportNotes = (work_report !== undefined && work_report !== null && String(work_report).trim() !== '')
+      ? String(work_report).trim()
+      : (notes || null);
 
     const [inH, inM] = existing.clock_in.split(':').map(Number);
     const [outH, outM] = currentTime.split(':').map(Number);
@@ -73,12 +79,20 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), (req, res) 
     const [endH, endM] = endTime.split(':').map(Number);
     const overtimeHours = Math.round(Math.max(0, (outH * 60 + outM) - (endH * 60 + endM)) / 60 * 100) / 100;
 
-    dbHelper.prepare('UPDATE attendance SET clock_out=?, clock_out_photo=?, work_hours=?, overtime_hours=? WHERE id=?')
-      .run(currentTime, photo, workHours, overtimeHours, existing.id);
+    dbHelper.prepare('UPDATE attendance SET clock_out=?, clock_out_photo=?, work_hours=?, overtime_hours=?, accounts_created=?, work_report=?, notes=? WHERE id=?')
+      .run(currentTime, photo, workHours, overtimeHours, accountsCount, reportNotes, notes || reportNotes || null, existing.id);
 
     res.json({
-      message: `Presensi pulang berhasil dicatat pada pukul ${currentTime}! Durasi: ${workHours} jam.`,
-      data: { clock_in: existing.clock_in, clock_out: currentTime, work_hours: workHours, overtime_hours: overtimeHours, date: today },
+      message: `Presensi pulang & laporan (${accountsCount} akun) berhasil dicatat pada pukul ${currentTime}! Durasi: ${workHours} jam.`,
+      data: {
+        clock_in: existing.clock_in,
+        clock_out: currentTime,
+        work_hours: workHours,
+        overtime_hours: overtimeHours,
+        accounts_created: accountsCount,
+        work_report: reportNotes,
+        date: today
+      },
     });
   } catch (err) {
     console.error(err);
@@ -160,7 +174,8 @@ router.get('/summary', authenticateToken, requireAdmin, (req, res) => {
         COUNT(CASE WHEN status = 'present' THEN 1 END) as present,
         COUNT(CASE WHEN status = 'late' THEN 1 END) as late,
         COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent,
-        COUNT(CASE WHEN status = 'leave' THEN 1 END) as leave
+        COUNT(CASE WHEN status = 'leave' THEN 1 END) as leave,
+        SUM(accounts_created) as total_accounts
       FROM attendance WHERE date = ?
     `).get(today);
 
@@ -171,7 +186,8 @@ router.get('/summary', authenticateToken, requireAdmin, (req, res) => {
     const monthStats = dbHelper.prepare(`
       SELECT
         AVG(work_hours) as avg_work_hours,
-        SUM(overtime_hours) as total_overtime
+        SUM(overtime_hours) as total_overtime,
+        SUM(accounts_created) as total_accounts
       FROM attendance WHERE date LIKE ? AND work_hours IS NOT NULL
     `).get(`${currentMonth}%`);
 
@@ -182,10 +198,12 @@ router.get('/summary', authenticateToken, requireAdmin, (req, res) => {
         late: todayStats.late || 0,
         absent: absentCount,
         leave: todayStats.leave || 0,
+        total_accounts: todayStats.total_accounts || 0,
       },
       this_month: {
         avg_work_hours: monthStats.avg_work_hours ? Math.round(monthStats.avg_work_hours * 10) / 10 : 0,
         total_overtime: monthStats.total_overtime ? Math.round(monthStats.total_overtime * 10) / 10 : 0,
+        total_accounts: monthStats.total_accounts || 0,
       },
     });
   } catch (err) {
@@ -220,6 +238,7 @@ router.get('/report', authenticateToken, requireAdmin, (req, res) => {
       absent: report.filter(r => r.status === 'absent').length,
       leave: report.filter(r => r.status === 'leave').length,
       total_overtime: Math.round(report.reduce((sum, r) => sum + (r.overtime_hours || 0), 0) * 10) / 10,
+      total_accounts: report.reduce((sum, r) => sum + (r.accounts_created || 0), 0),
     };
 
     res.json({ report, summary });

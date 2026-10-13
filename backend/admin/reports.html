@@ -74,6 +74,10 @@
             <div class="stat-label">Total Data</div>
             <div class="stat-value" id="r-total">0</div>
           </div>
+          <div class="stat-card primary" style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.03));border:1px solid rgba(16,185,129,0.3);">
+            <div class="stat-label" style="color:var(--primary);font-weight:600;">Total Akun Dikerjakan</div>
+            <div class="stat-value" id="r-accounts" style="color:var(--primary);">0</div>
+          </div>
           <div class="stat-card success">
             <div class="stat-label">Hadir</div>
             <div class="stat-value" id="r-present">0</div>
@@ -110,6 +114,7 @@
                   <th>Status</th>
                   <th>Durasi Kerja</th>
                   <th>Lembur</th>
+                  <th>Hasil Akun</th>
                 </tr>
               </thead>
               <tbody id="report-tbody"></tbody>
@@ -160,6 +165,7 @@
         document.getElementById('report-table').style.display = 'block';
 
         document.getElementById('r-total').textContent = data.summary.total_records;
+        document.getElementById('r-accounts').textContent = data.summary.total_accounts || 0;
         document.getElementById('r-present').textContent = data.summary.present;
         document.getElementById('r-late').textContent = data.summary.late;
         document.getElementById('r-absent').textContent = data.summary.absent;
@@ -167,7 +173,7 @@
 
         const tbody = document.getElementById('report-tbody');
         if (reportData.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:28px;">Tidak ada data pada periode ini</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:28px;">Tidak ada data pada periode ini</td></tr>';
         } else {
           tbody.innerHTML = reportData.map(r => `
             <tr>
@@ -187,6 +193,10 @@
               <td data-label="Status Kehadiran">${statusBadge(r.status)}</td>
               <td data-label="Durasi Kerja">${r.work_hours ? r.work_hours + ' jam' : '-'}</td>
               <td data-label="Lembur">${r.overtime_hours > 0 ? '<span style="color:var(--warning);font-weight:600;">' + r.overtime_hours + ' jam</span>' : '-'}</td>
+              <td data-label="Hasil Akun">
+                <span class="badge badge-primary font-bold">📦 ${r.accounts_created || 0} Akun</span>
+                ${r.work_report ? `<div class="text-muted" style="font-size:11px;margin-top:4px;max-width:200px;line-height:1.35;word-break:break-word;" title="${escapeHtml(r.work_report)}">📝 ${escapeHtml(r.work_report)}</div>` : ''}
+              </td>
             </tr>
           `).join('');
         }
@@ -205,7 +215,9 @@
         Jam_Pulang: r.clock_out || '',
         Status: r.status,
         Jam_Kerja: r.work_hours || 0,
-        Lembur: r.overtime_hours || 0
+        Lembur: r.overtime_hours || 0,
+        Akun_Selesai: r.accounts_created || 0,
+        Laporan_Kerja: r.work_report || r.notes || ''
       })), 'rekap_laporan_absensi');
     });
 

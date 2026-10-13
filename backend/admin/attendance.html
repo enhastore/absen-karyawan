@@ -59,10 +59,11 @@
                   <th>Status</th>
                   <th>Durasi Kerja</th>
                   <th>Lembur</th>
+                  <th>Hasil Akun</th>
                 </tr>
               </thead>
               <tbody id="attendance-tbody">
-                <tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Memuat data...</td></tr>
+                <tr><td colspan="8" class="text-center text-muted" style="padding:28px;">Memuat data...</td></tr>
               </tbody>
             </table>
           </div>
@@ -110,7 +111,7 @@
 
         const tbody = document.getElementById('attendance-tbody');
         if (allAttendance.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Tidak ada catatan kehadiran pada tanggal ini</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:28px;">Tidak ada catatan kehadiran pada tanggal ini</td></tr>';
           return;
         }
 
@@ -131,6 +132,10 @@
             <td data-label="Status Kehadiran">${statusBadge(a.status)}</td>
             <td data-label="Durasi Kerja">${a.work_hours ? a.work_hours + ' jam' : '-'}</td>
             <td data-label="Lembur">${a.overtime_hours > 0 ? '<span style="color:var(--warning);font-weight:600;">' + a.overtime_hours + ' jam</span>' : '-'}</td>
+            <td data-label="Hasil Akun">
+              <span class="badge badge-primary" style="font-weight:600;">📦 ${a.accounts_created || 0} Akun</span>
+              ${a.work_report ? `<div class="text-muted" style="font-size:11px;margin-top:4px;max-width:200px;line-height:1.35;word-break:break-word;" title="${escapeHtml(a.work_report)}">📝 ${escapeHtml(a.work_report)}</div>` : ''}
+            </td>
           </tr>
         `).join('');
       } catch (err) {
@@ -147,7 +152,9 @@
         Jam_Pulang: a.clock_out || '',
         Status: a.status,
         Jam_Kerja: a.work_hours || 0,
-        Lembur: a.overtime_hours || 0
+        Lembur: a.overtime_hours || 0,
+        Akun_Selesai: a.accounts_created || 0,
+        Laporan_Kerja: a.work_report || a.notes || ''
       })), 'laporan_kehadiran');
     });
 

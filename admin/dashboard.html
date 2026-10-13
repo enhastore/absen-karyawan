@@ -69,10 +69,10 @@
               <div class="data-table-wrapper">
                 <table class="data-table">
                   <thead>
-                    <tr><th>Karyawan</th><th>Masuk</th><th>Pulang</th><th>Status</th><th>Durasi</th></tr>
+                    <tr><th>Karyawan</th><th>Masuk</th><th>Pulang</th><th>Status</th><th>Durasi</th><th>Hasil Akun</th></tr>
                   </thead>
                   <tbody id="attendance-table-body">
-                    <tr><td colspan="5" class="text-center text-muted" style="padding:28px;">Memuat data kehadiran...</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted" style="padding:28px;">Memuat data kehadiran...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -112,6 +112,11 @@
                 <h3>Statistik Bulan Ini</h3>
               </div>
               <div class="data-card-body" style="display:flex;flex-direction:column;gap:14px;">
+                <div>
+                  <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Akun Selesai Bulan Ini</div>
+                  <div style="font-family:'Outfit';font-size:24px;font-weight:700;color:var(--primary);margin-top:2px;" id="total-accounts-month">-</div>
+                  <div style="font-size:11px;color:var(--text-muted);">akun dikerjakan</div>
+                </div>
                 <div>
                   <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Rata-rata Jam Kerja</div>
                   <div style="font-family:'Outfit';font-size:24px;font-weight:700;color:var(--primary);margin-top:2px;" id="avg-hours">-</div>
@@ -153,12 +158,14 @@
         document.getElementById('stat-leave').textContent = summary.today.leave;
         document.getElementById('avg-hours').textContent = summary.this_month.avg_work_hours || '0';
         document.getElementById('total-overtime').textContent = summary.this_month.total_overtime || '0';
+        const monthAcc = document.getElementById('total-accounts-month');
+        if (monthAcc) monthAcc.textContent = summary.this_month.total_accounts || '0';
 
         const today = new Date().toISOString().split('T')[0];
         const attendance = await api.get(`/attendance/all?date=${today}&limit=10`);
         const tbody = document.getElementById('attendance-table-body');
         if (!attendance.attendance || attendance.attendance.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:28px;">Belum ada catatan kehadiran hari ini</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:28px;">Belum ada catatan kehadiran hari ini</td></tr>';
         } else {
           tbody.innerHTML = attendance.attendance.map(a => `
             <tr>
@@ -175,6 +182,7 @@
               <td data-label="Jam Pulang" style="font-weight:600;">${a.clock_out || '-'}</td>
               <td data-label="Status Kehadiran">${statusBadge(a.status)}</td>
               <td data-label="Durasi Kerja">${a.work_hours ? a.work_hours + ' jam' : '-'}</td>
+              <td data-label="Hasil Akun"><span class="badge badge-primary font-bold">📦 ${a.accounts_created || 0} Akun</span></td>
             </tr>
           `).join('');
         }
