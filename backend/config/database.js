@@ -57,6 +57,14 @@ async function initDatabase() {
       position TEXT,
       phone TEXT,
       avatar TEXT,
+      salary_system TEXT DEFAULT 'per_account',
+      rate_per_account INTEGER DEFAULT 500,
+      base_salary INTEGER DEFAULT 0,
+      daily_target INTEGER DEFAULT 0,
+      target_bonus INTEGER DEFAULT 0,
+      payroll_period TEXT DEFAULT 'bulanan',
+      period_start_day INTEGER DEFAULT 1,
+      pay_date TEXT DEFAULT '25',
       is_active INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -81,6 +89,10 @@ async function initDatabase() {
       work_hours REAL,
       overtime_hours REAL DEFAULT 0,
       accounts_created INTEGER DEFAULT 0,
+      rate_per_account INTEGER DEFAULT 500,
+      daily_earnings INTEGER DEFAULT 0,
+      payment_status TEXT DEFAULT 'unpaid',
+      approval_status TEXT DEFAULT 'approved',
       work_report TEXT,
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -173,6 +185,20 @@ async function initDatabase() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS employee_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      author_id INTEGER,
+      author_name TEXT,
+      note TEXT NOT NULL,
+      category TEXT DEFAULT 'general',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (author_id) REFERENCES users(id)
+    )
+  `);
+
   try {
     const tableInfo = db.exec("PRAGMA table_info(users)");
     const cols = tableInfo.length > 0 ? tableInfo[0].values.map(v => v[1]) : [];
@@ -182,8 +208,32 @@ async function initDatabase() {
     if (!cols.includes('telegram_username')) {
       db.run("ALTER TABLE users ADD COLUMN telegram_username TEXT");
     }
+    if (!cols.includes('salary_system')) {
+      db.run("ALTER TABLE users ADD COLUMN salary_system TEXT DEFAULT 'per_account'");
+    }
+    if (!cols.includes('rate_per_account')) {
+      db.run("ALTER TABLE users ADD COLUMN rate_per_account INTEGER DEFAULT 500");
+    }
+    if (!cols.includes('base_salary')) {
+      db.run("ALTER TABLE users ADD COLUMN base_salary INTEGER DEFAULT 0");
+    }
+    if (!cols.includes('daily_target')) {
+      db.run("ALTER TABLE users ADD COLUMN daily_target INTEGER DEFAULT 0");
+    }
+    if (!cols.includes('target_bonus')) {
+      db.run("ALTER TABLE users ADD COLUMN target_bonus INTEGER DEFAULT 0");
+    }
+    if (!cols.includes('payroll_period')) {
+      db.run("ALTER TABLE users ADD COLUMN payroll_period TEXT DEFAULT 'bulanan'");
+    }
+    if (!cols.includes('period_start_day')) {
+      db.run("ALTER TABLE users ADD COLUMN period_start_day INTEGER DEFAULT 1");
+    }
+    if (!cols.includes('pay_date')) {
+      db.run("ALTER TABLE users ADD COLUMN pay_date TEXT DEFAULT '25'");
+    }
   } catch(e) {
-    console.warn("Notice checking telegram columns:", e.message);
+    console.warn("Notice checking telegram and salary columns:", e.message);
   }
 
   try {
@@ -194,6 +244,18 @@ async function initDatabase() {
     }
     if (!attCols.includes('work_report')) {
       db.run("ALTER TABLE attendance ADD COLUMN work_report TEXT");
+    }
+    if (!attCols.includes('rate_per_account')) {
+      db.run("ALTER TABLE attendance ADD COLUMN rate_per_account INTEGER DEFAULT 500");
+    }
+    if (!attCols.includes('daily_earnings')) {
+      db.run("ALTER TABLE attendance ADD COLUMN daily_earnings INTEGER DEFAULT 0");
+    }
+    if (!attCols.includes('payment_status')) {
+      db.run("ALTER TABLE attendance ADD COLUMN payment_status TEXT DEFAULT 'unpaid'");
+    }
+    if (!attCols.includes('approval_status')) {
+      db.run("ALTER TABLE attendance ADD COLUMN approval_status TEXT DEFAULT 'approved'");
     }
   } catch(e) {
     console.warn("Notice checking attendance columns:", e.message);

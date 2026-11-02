@@ -59,13 +59,14 @@
                   <th>Departemen</th>
                   <th>Jabatan & Tanggung Jawab</th>
                   <th>Telepon / WA</th>
+                  <th>Tarif & Skema Gaji</th>
                   <th>Peran</th>
                   <th>Status</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
               <tbody id="employees-tbody">
-                <tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Memuat data karyawan...</td></tr>
+                <tr><td colspan="8" class="text-center text-muted" style="padding:28px;">Memuat data karyawan...</td></tr>
               </tbody>
             </table>
           </div>
@@ -128,11 +129,196 @@
               </select>
             </div>
           </div>
+
+          <!-- B. Pengaturan Penggajian & Tarif Akun (Sesuai Gambar 3 & 5) -->
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <h4 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:0;display:flex;align-items:center;gap:6px;">
+                <span>💰 B. Pengaturan Gaji & Tarif Akun</span>
+              </h4>
+              <span class="badge badge-primary" style="font-size:10.5px;">Tarif Individual</span>
+            </div>
+            <p style="font-size:11.5px;color:var(--text-muted);margin:0 0 14px 0;line-height:1.4;">
+              Atur skema penggajian dan harga per akun untuk karyawan ini. Gaji akhir dihitung otomatis berdasarkan jumlah akun yang dikerjakan dan tarif yang berlaku.
+            </p>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label for="f-salary-system">Sistem Penggajian</label>
+                <select class="form-control" id="f-salary-system">
+                  <option value="per_account">Borongan per akun</option>
+                  <option value="fixed">Gaji tetap bulanan</option>
+                  <option value="fixed_bonus">Gaji tetap + bonus</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="f-rate-per-account">Harga / Tarif per Akun (Rp) *</label>
+                <input type="number" class="form-control" id="f-rate-per-account" placeholder="500" value="500" min="0" required>
+                <span style="font-size:11px;color:var(--text-muted);">Bayaran untuk setiap akun yang berhasil dikerjakan</span>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label for="f-base-salary">Gaji Patokan Awal (Rp)</label>
+                <input type="number" class="form-control" id="f-base-salary" placeholder="Contoh: 1500000" value="0" min="0">
+                <span style="font-size:11px;color:var(--text-muted);">Nominal perkiraan gaji / acuan (belum final)</span>
+              </div>
+              <div class="form-group">
+                <label for="f-daily-target">Target Akun Harian</label>
+                <input type="number" class="form-control" id="f-daily-target" placeholder="Contoh: 25" value="25" min="0">
+                <span style="font-size:11px;color:var(--text-muted);">Target pengerjaan akun jika diperlukan</span>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label for="f-target-bonus">Bonus Target (Rp)</label>
+                <input type="number" class="form-control" id="f-target-bonus" placeholder="0" value="0" min="0">
+                <span style="font-size:11px;color:var(--text-muted);">Tambahan bonus jika target tercapai</span>
+              </div>
+              <div class="form-group">
+                <label for="f-payroll-period">Periode Penggajian</label>
+                <select class="form-control" id="f-payroll-period">
+                  <option value="bulanan">Bulanan</option>
+                  <option value="mingguan">Mingguan</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label for="f-period-start">Tanggal Mulai Periode</label>
+                <input type="number" class="form-control" id="f-period-start" min="1" max="31" value="1" placeholder="1">
+                <span style="font-size:11px;color:var(--text-muted);">Tanggal awal penghitungan (misal tanggal 1)</span>
+              </div>
+              <div class="form-group">
+                <label for="f-pay-date">Tanggal Pembayaran / Akhir Periode</label>
+                <input type="text" class="form-control" id="f-pay-date" value="25" placeholder="Contoh: 25 atau Akhir Bulan">
+                <span style="font-size:11px;color:var(--text-muted);">Tanggal akhir penghitungan / gajian</span>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeModal('employee-modal')">Batal</button>
         <button class="btn btn-primary" id="btn-save">Simpan Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: CATATAN KHUSUS & AKTIVITAS PER KARYAWAN -->
+  <!-- ============================================== -->
+  <div class="confirm-dialog-overlay" id="modal-employee-activities">
+    <div class="confirm-dialog-card" style="max-width:840px;width:95%;max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden;" role="dialog" aria-modal="true">
+      <!-- Modal Header with Employee Info -->
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--card-hover);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" id="act-emp-avatar" style="width:46px;height:46px;font-size:18px;font-weight:700;">--</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--text-primary);" id="act-emp-name">Nama Karyawan</h3>
+              <span class="badge badge-primary font-bold" id="act-emp-id">EMP001</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;" id="act-emp-meta">
+              Departemen · Jabatan
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="closeEmployeeActivitiesModal()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:22px;line-height:1;padding:4px 8px;">✕</button>
+      </div>
+
+      <!-- Quick KPI Chips for this employee -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--card-bg);">
+        <div style="background:var(--card-hover);padding:10px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;">Total Hadir</div>
+          <div style="font-size:16px;font-weight:800;color:var(--success);margin-top:2px;" id="act-stat-days">0 hari</div>
+        </div>
+        <div style="background:var(--card-hover);padding:10px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;">Akun Selesai</div>
+          <div style="font-size:16px;font-weight:800;color:var(--primary);margin-top:2px;" id="act-stat-accounts">0 akun</div>
+        </div>
+        <div style="background:var(--card-hover);padding:10px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;">Akumulasi Upah</div>
+          <div style="font-size:16px;font-weight:800;color:var(--primary);margin-top:2px;" id="act-stat-wages">Rp0</div>
+        </div>
+        <div style="background:var(--card-hover);padding:10px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;">Tarif per Akun</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text-primary);margin-top:2px;" id="act-stat-rate">Rp500</div>
+        </div>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div style="flex:1;overflow-y:auto;padding:16px 20px;">
+        <!-- Form Tambah Catatan Khusus untuk Karyawan Ini -->
+        <div class="data-card mb-2" style="border:1px solid rgba(59,130,246,0.3);background:linear-gradient(135deg, rgba(59,130,246,0.05), rgba(16,185,129,0.03));padding:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;color:var(--text-primary);">
+              <span>✍️ Tambah Catatan Khusus untuk <span id="act-emp-firstname">Karyawan</span></span>
+            </label>
+            <select class="form-control" id="act-note-category" style="width:auto;font-size:11.5px;padding:3px 10px;height:28px;">
+              <option value="Aktivitas">Aktivitas</option>
+              <option value="Evaluasi">Evaluasi Kinerja</option>
+              <option value="Target">Target & Bonus</option>
+              <option value="Kendala">Kendala Akun</option>
+              <option value="Umum">Umum</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <textarea class="form-control" id="act-new-note-text" rows="2" placeholder="Tuliskan catatan khusus atau memo aktivitas untuk staf ini..." style="flex:1;min-width:220px;font-size:12.5px;resize:vertical;"></textarea>
+            <button type="button" class="btn btn-primary" onclick="submitEmployeeSpecialNote()" style="align-self:flex-end;white-space:nowrap;font-weight:600;font-size:12.5px;">
+              + Simpan Catatan
+            </button>
+          </div>
+        </div>
+
+        <!-- Daftar Catatan Khusus Admin Jika Ada -->
+        <div id="act-admin-notes-container" style="margin-bottom:18px;display:none;">
+          <h4 style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0 0 8px 0;">Catatan Khusus Admin:</h4>
+          <div id="act-admin-notes-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- Riwayat Catatan Kerja & Akun Harian (Hanya Karyawan A Saja!) -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+            <div>
+              <h4 style="font-size:14px;font-weight:700;margin:0;color:var(--text-primary);">
+                📋 Catatan Kerja & Laporan Akun Harian
+              </h4>
+              <span style="font-size:11.5px;color:var(--text-muted);">
+                Khusus catatan pengerjaan akun dan laporan selesai kerja oleh karyawan ini
+              </span>
+            </div>
+            <input type="text" class="form-control" id="act-filter-search" placeholder="Cari tanggal / catatan..." style="font-size:11.5px;padding:4px 8px;width:180px;">
+          </div>
+
+          <div class="data-table-wrapper">
+            <table class="data-table" style="font-size:12px;">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Jam Kerja</th>
+                  <th>Akun Selesai</th>
+                  <th>Tarif</th>
+                  <th>Pendapatan</th>
+                  <th>Status</th>
+                  <th>Catatan / Laporan Pekerjaan</th>
+                </tr>
+              </thead>
+              <tbody id="act-work-reports-tbody">
+                <tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Memuat catatan kerja...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--card-hover);">
+        <div style="font-size:12px;color:var(--text-muted);" id="act-total-records-footer">0 catatan ditemukan</div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeEmployeeActivitiesModal()">Tutup</button>
       </div>
     </div>
   </div>
@@ -179,17 +365,25 @@
 
         const tbody = document.getElementById('employees-tbody');
         if (allEmployees.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Tidak ada data karyawan ditemukan</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:28px;">Tidak ada data karyawan ditemukan</td></tr>';
           return;
         }
 
-        tbody.innerHTML = allEmployees.map(u => `
+        tbody.innerHTML = allEmployees.map(u => {
+          const rateFormatted = (u.rate_per_account !== undefined && u.rate_per_account !== null)
+            ? 'Rp' + Number(u.rate_per_account).toLocaleString('id-ID')
+            : 'Rp500';
+          const sysLabel = u.salary_system === 'fixed'
+            ? 'Gaji Tetap'
+            : (u.salary_system === 'fixed_bonus' ? 'Tetap + Bonus' : 'Borongan per Akun');
+
+          return `
           <tr>
             <td>
-              <div class="user-cell">
+              <div class="user-cell" onclick="openEmployeeActivitiesModal(${u.id})" style="cursor:pointer;" title="Klik untuk lihat catatan kerja khusus ${u.name}">
                 <div class="avatar">${getInitials(u.name)}</div>
                 <div class="user-details">
-                  <div class="name">${u.name}</div>
+                  <div class="name" style="color:var(--primary);">${u.name}</div>
                   <div class="emp-id">${u.employee_id || '-'} · ${u.email}</div>
                 </div>
               </div>
@@ -197,10 +391,17 @@
             <td data-label="Departemen">${u.department_name || '-'}</td>
             <td data-label="Jabatan & Tanggung Jawab">${u.position || '-'}</td>
             <td data-label="Telepon / WA">${u.phone ? `<a href="https://wa.me/${u.phone.replace(/[^0-9]/g,'')}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:500;">${u.phone}</a>` : '-'}</td>
+            <td data-label="Tarif & Skema Gaji">
+              <span class="badge badge-primary font-bold" style="font-size:11.5px;">${rateFormatted} / akun</span>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${sysLabel}</div>
+            </td>
             <td data-label="Peran">${u.role === 'admin' ? '<span class="badge badge-high">Admin</span>' : '<span class="badge badge-info">Karyawan</span>'}</td>
             <td data-label="Status">${statusBadge(u.status)}</td>
             <td class="table-actions-cell">
               <div class="table-actions">
+                <button class="btn btn-primary btn-sm" onclick="openEmployeeActivitiesModal(${u.id})" style="display:inline-flex;align-items:center;gap:4px;font-weight:600;" title="Buka Catatan Aktivitas Khusus ${u.name}">
+                  <span>📋 Catatan Kerja</span>
+                </button>
                 <button class="btn btn-ghost btn-sm" onclick="editEmployee(${u.id})">Ubah</button>
                 <button class="btn btn-ghost btn-sm" onclick="deleteEmployee(${u.id}, '${u.name}')" style="color:var(--danger);" title="Hapus Karyawan">Hapus</button>
                 <button class="btn btn-ghost btn-sm" onclick="toggleEmployeeStatus(${u.id}, '${u.status}')">
@@ -209,7 +410,8 @@
               </div>
             </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -229,8 +431,18 @@
       document.getElementById('f-position').value = '';
       document.getElementById('f-phone').value = '';
       document.getElementById('f-role').value = 'employee';
+      document.getElementById('f-salary-system').value = 'per_account';
+      document.getElementById('f-rate-per-account').value = '500';
+      document.getElementById('f-base-salary').value = '0';
+      document.getElementById('f-daily-target').value = '25';
+      document.getElementById('f-target-bonus').value = '0';
+      document.getElementById('f-payroll-period').value = 'bulanan';
+      document.getElementById('f-period-start').value = '1';
+      document.getElementById('f-pay-date').value = '25';
       refreshSelect('f-department');
       refreshSelect('f-role');
+      refreshSelect('f-salary-system');
+      refreshSelect('f-payroll-period');
       openModal('employee-modal');
     }
 
@@ -250,8 +462,18 @@
       document.getElementById('f-position').value = u.position || '';
       document.getElementById('f-phone').value = u.phone || '';
       document.getElementById('f-role').value = u.role;
+      document.getElementById('f-salary-system').value = u.salary_system || 'per_account';
+      document.getElementById('f-rate-per-account').value = u.rate_per_account !== undefined ? u.rate_per_account : 500;
+      document.getElementById('f-base-salary').value = u.base_salary || 0;
+      document.getElementById('f-daily-target').value = u.daily_target !== undefined ? u.daily_target : 25;
+      document.getElementById('f-target-bonus').value = u.target_bonus || 0;
+      document.getElementById('f-payroll-period').value = u.payroll_period || 'bulanan';
+      document.getElementById('f-period-start').value = u.period_start_day || 1;
+      document.getElementById('f-pay-date').value = u.pay_date || '25';
       refreshSelect('f-department');
       refreshSelect('f-role');
+      refreshSelect('f-salary-system');
+      refreshSelect('f-payroll-period');
       openModal('employee-modal');
     }
 
@@ -264,7 +486,15 @@
         department_id: document.getElementById('f-department').value ? parseInt(document.getElementById('f-department').value) : null,
         position: document.getElementById('f-position').value.trim(),
         phone: document.getElementById('f-phone').value.trim(),
-        role: document.getElementById('f-role').value
+        role: document.getElementById('f-role').value,
+        salary_system: document.getElementById('f-salary-system').value,
+        rate_per_account: parseInt(document.getElementById('f-rate-per-account').value) || 500,
+        base_salary: parseInt(document.getElementById('f-base-salary').value) || 0,
+        daily_target: parseInt(document.getElementById('f-daily-target').value) || 0,
+        target_bonus: parseInt(document.getElementById('f-target-bonus').value) || 0,
+        payroll_period: document.getElementById('f-payroll-period').value,
+        period_start_day: parseInt(document.getElementById('f-period-start').value) || 1,
+        pay_date: document.getElementById('f-pay-date').value.trim() || '25'
       };
 
       const pw = document.getElementById('f-password').value;
@@ -277,11 +507,11 @@
       try {
         if (id) {
           await api.put(`/users/${id}`, body);
-          showToast('Data karyawan berhasil diperbarui', 'success');
+          showToast('Data karyawan & tarif berhasil diperbarui', 'success');
         } else {
           if (!pw) return showToast('Kata sandi harus diisi untuk akun karyawan baru', 'warning');
           await api.post('/users', body);
-          showToast('Karyawan baru berhasil ditambahkan', 'success');
+          showToast('Karyawan baru berhasil ditambahkan dengan pengaturan gaji', 'success');
         }
         closeModal('employee-modal');
         loadEmployees();
@@ -335,10 +565,174 @@
         Email: u.email,
         Departemen: u.department_name || '',
         Jabatan: u.position || '',
+        Sistem_Gaji: u.salary_system || 'per_account',
+        Tarif_Per_Akun: u.rate_per_account || 500,
+        Gaji_Patokan_Awal: u.base_salary || 0,
+        Target_Harian: u.daily_target || 0,
+        Bonus_Target: u.target_bonus || 0,
+        Periode: u.payroll_period || 'bulanan',
         Peran: u.role,
         Status: u.status
-      })), 'daftar_karyawan_toko_digital');
+      })), 'daftar_karyawan_dan_tarif_gaji');
     });
+
+    let currentActivityUserId = null;
+    let currentActivityData = null;
+
+    async function openEmployeeActivitiesModal(userId) {
+      currentActivityUserId = userId;
+      const modal = document.getElementById('modal-employee-activities');
+      if (!modal) return;
+
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      // Reset contents
+      document.getElementById('act-emp-avatar').textContent = '--';
+      document.getElementById('act-emp-name').textContent = 'Memuat...';
+      document.getElementById('act-emp-id').textContent = '-';
+      document.getElementById('act-emp-meta').textContent = 'Memuat informasi aktivitas...';
+      document.getElementById('act-work-reports-tbody').innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:20px;">Memuat riwayat kerja...</td></tr>';
+      document.getElementById('act-new-note-text').value = '';
+
+      try {
+        const data = await api.get(`/users/${userId}/activities`);
+        currentActivityData = data;
+        const emp = data.employee;
+        const stats = data.stats || {};
+
+        document.getElementById('act-emp-avatar').textContent = getInitials(emp.name);
+        document.getElementById('act-emp-name').textContent = emp.name;
+        document.getElementById('act-emp-firstname').textContent = emp.name.split(' ')[0];
+        document.getElementById('act-emp-id').textContent = emp.employee_id || 'EMP';
+        document.getElementById('act-emp-meta').textContent = `${emp.department_name || '-'} · ${emp.position || '-'} · ${emp.phone || '-'}`;
+
+        document.getElementById('act-stat-days').textContent = `${stats.total_days_present || 0} hari`;
+        document.getElementById('act-stat-accounts').textContent = `${stats.total_accounts_created || 0} akun`;
+        document.getElementById('act-stat-wages').textContent = `Rp${(stats.total_accumulated_wages || 0).toLocaleString('id-ID')}`;
+        document.getElementById('act-stat-rate').textContent = `Rp${(emp.rate_per_account || 500).toLocaleString('id-ID')}/akun`;
+
+        renderAdminNotesList(data.admin_notes || []);
+        renderWorkReportsList(data.work_reports || []);
+      } catch (err) {
+        showToast(err.message || 'Gagal memuat aktivitas karyawan', 'error');
+        closeEmployeeActivitiesModal();
+      }
+    }
+
+    function closeEmployeeActivitiesModal() {
+      const modal = document.getElementById('modal-employee-activities');
+      if (modal) modal.classList.remove('active');
+      document.body.style.overflow = '';
+      currentActivityUserId = null;
+      currentActivityData = null;
+    }
+
+    function renderAdminNotesList(notes) {
+      const container = document.getElementById('act-admin-notes-container');
+      const list = document.getElementById('act-admin-notes-list');
+      if (!notes || notes.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+      container.style.display = 'block';
+      list.innerHTML = notes.map(n => `
+        <div style="background:var(--card-hover);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div style="font-size:12px;">
+            <div style="font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+              <span class="badge badge-primary" style="font-size:10px;padding:1px 6px;">${escapeHtml(n.category || 'Aktivitas')}</span>
+              <span style="color:var(--text-muted);font-weight:400;font-size:11px;">oleh ${escapeHtml(n.author_name || 'Admin')} · ${formatDate(n.created_at)}</span>
+            </div>
+            <div style="margin-top:4px;color:var(--text-secondary);line-height:1.4;">${escapeHtml(n.note)}</div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="deleteEmployeeSpecialNote(${n.id})" style="color:var(--danger);padding:2px 6px;font-size:11px;" title="Hapus catatan">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function renderWorkReportsList(reports) {
+      const tbody = document.getElementById('act-work-reports-tbody');
+      const search = (document.getElementById('act-filter-search')?.value || '').toLowerCase().trim();
+
+      let filtered = reports;
+      if (search) {
+        filtered = filtered.filter(r =>
+          (r.date || '').toLowerCase().includes(search) ||
+          (r.work_report || '').toLowerCase().includes(search) ||
+          (r.status || '').toLowerCase().includes(search)
+        );
+      }
+
+      document.getElementById('act-total-records-footer').textContent = `${filtered.length} catatan aktivitas ditemukan`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:24px;">Belum ada catatan pekerjaan yang sesuai</td></tr>';
+        return;
+      }
+
+      const empRate = (currentActivityData && currentActivityData.employee) ? currentActivityData.employee.rate_per_account : 500;
+
+      tbody.innerHTML = filtered.map(r => {
+        const rate = r.rate_per_account || empRate || 500;
+        const accounts = r.accounts_created || 0;
+        const earnings = (r.daily_earnings !== undefined && r.daily_earnings !== null && r.daily_earnings > 0)
+          ? r.daily_earnings
+          : (accounts * rate);
+
+        return `
+          <tr>
+            <td style="font-weight:600;white-space:nowrap;">${formatDate(r.date)}</td>
+            <td style="white-space:nowrap;">${r.clock_in || '-'} s/d ${r.clock_out || '-'} ${r.work_hours ? `(${r.work_hours}j)` : ''}</td>
+            <td style="font-weight:700;"><span class="badge badge-primary font-bold">📦 ${accounts} Akun</span></td>
+            <td>Rp${rate.toLocaleString('id-ID')}</td>
+            <td style="font-weight:700;color:var(--primary);">Rp${earnings.toLocaleString('id-ID')}</td>
+            <td>${statusBadge(r.status)}</td>
+            <td style="max-width:260px;line-height:1.4;word-break:break-word;">
+              ${r.work_report ? `<strong>"${escapeHtml(r.work_report)}"</strong>` : '<span class="text-muted">-</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('act-filter-search')?.addEventListener('input', () => {
+      if (currentActivityData && currentActivityData.work_reports) {
+        renderWorkReportsList(currentActivityData.work_reports);
+      }
+    });
+
+    async function submitEmployeeSpecialNote() {
+      if (!currentActivityUserId) return;
+      const textarea = document.getElementById('act-new-note-text');
+      const category = document.getElementById('act-note-category').value;
+      const note = textarea.value.trim();
+      if (!note) return showToast('Tuliskan catatan terlebih dahulu', 'warning');
+
+      try {
+        const res = await api.post(`/users/${currentActivityUserId}/notes`, { note, category });
+        showToast(res.message || 'Catatan berhasil disimpan', 'success');
+        textarea.value = '';
+        // Reload activities
+        const data = await api.get(`/users/${currentActivityUserId}/activities`);
+        currentActivityData = data;
+        renderAdminNotesList(data.admin_notes || []);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteEmployeeSpecialNote(noteId) {
+      if (!currentActivityUserId) return;
+      try {
+        await api.delete(`/users/${currentActivityUserId}/notes/${noteId}`);
+        showToast('Catatan dihapus', 'success');
+        const data = await api.get(`/users/${currentActivityUserId}/activities`);
+        currentActivityData = data;
+        renderAdminNotesList(data.admin_notes || []);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
 
     document.getElementById('filter-department').addEventListener('change', loadEmployees);
     document.getElementById('filter-role').addEventListener('change', loadEmployees);

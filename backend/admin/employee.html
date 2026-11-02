@@ -47,6 +47,7 @@
           Selesai Bekerja
         </button>
       </div>
+      <div id="today-report-container" style="display:none;margin-top:16px;width:100%;max-width:440px;"></div>
     </section>
 
     <!-- Tabs -->
@@ -349,6 +350,60 @@
     </div>
   </div>
 
+  <!-- ============================================== -->
+  <!-- MODAL: LAPORAN PEKERJAAN HARI INI (GAMBAR 4)   -->
+  <!-- ============================================== -->
+  <div class="confirm-dialog-overlay" id="modal-report-summary">
+    <div class="confirm-dialog-card" style="max-width:440px;width:92%;" role="dialog" aria-modal="true">
+      <div class="confirm-dialog-header" style="justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.15);color:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:18px;">
+            📋
+          </div>
+          <div>
+            <h3 style="font-size:15px;font-weight:700;margin:0;">LAPORAN PEKERJAAN HARI INI</h3>
+            <span style="font-size:11.5px;color:var(--text-muted);">Hasil kerja & estimasi upah harian</span>
+          </div>
+        </div>
+        <button type="button" onclick="closeReportSummaryModal()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;">✕</button>
+      </div>
+
+      <div style="padding:16px 0;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);text-align:left;color:var(--text-muted);font-size:11.5px;">
+              <th style="padding:6px 4px;font-weight:600;">Keterangan</th>
+              <th style="padding:6px 4px;text-align:right;font-weight:600;">Hasil</th>
+            </tr>
+          </thead>
+          <tbody id="summary-table-body">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+
+        <!-- Pemberitahuan & Catatan Penting Sesuai Gambar 4 -->
+        <div style="margin-top:16px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:12px;font-size:12px;line-height:1.45;color:var(--text-primary);">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-size:15px;">ℹ️</span>
+            <div>
+              <strong style="color:var(--text-primary);">Laporan pekerjaan berhasil disimpan.</strong>
+              <div style="margin-top:3px;color:var(--text-secondary);">
+                Pendapatan yang ditampilkan masih bersifat sementara dan akan diakumulasikan dalam periode penggajian berjalan.
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:9px;padding-top:8px;border-top:1px dashed rgba(59,130,246,0.25);font-size:11.5px;color:var(--text-muted);">
+            <strong style="color:var(--text-primary);">Penting:</strong> Pendapatan harian tidak langsung menjadi pembayaran gaji. Nilainya terus diakumulasikan sampai periode penggajian berakhir.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);padding-top:12px;">
+        <button type="button" class="btn btn-primary btn-block" onclick="closeReportSummaryModal()">Tutup & Kembali</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
   <script src="js/api.js"></script>
@@ -422,34 +477,76 @@
         const btnIn = document.getElementById('btn-clock-in');
         const btnOut = document.getElementById('btn-clock-out');
         const status = document.getElementById('clock-status');
+        const reportContainer = document.getElementById('today-report-container');
 
         if (data.attendance) {
           const a = data.attendance;
           if (a.clock_in && !a.clock_out) {
             btnIn.disabled = true;
             btnOut.disabled = false;
-            status.innerHTML = `<span style="color:var(--success);font-weight:600;">Masuk pukul ${a.clock_in}</span> · ${statusBadge(a.status)}`;
+            status.innerHTML = `<span style="color:var(--success);font-weight:600;">Sedang Bekerja (Masuk pukul ${a.clock_in})</span> · ${statusBadge(a.status)}`;
+            if (reportContainer) reportContainer.style.display = 'none';
           } else if (a.clock_in && a.clock_out) {
             btnIn.disabled = true;
             btnOut.disabled = true;
             const accounts = (a.accounts_created !== null && a.accounts_created !== undefined) ? a.accounts_created : 0;
-            const reportBadge = `<span class="clock-status-report-badge">🎯 <strong>${accounts}</strong> Akun Dikerjakan</span>`;
-            const reportNote = a.work_report ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;max-width:340px;line-height:1.4;word-break:break-word;"><em>"${escapeHtml(a.work_report)}"</em></div>` : '';
+            const rate = a.rate_per_account || data.user_rate || 500;
+            const earnings = a.daily_earnings !== undefined && a.daily_earnings !== null && a.daily_earnings > 0
+              ? a.daily_earnings
+              : (accounts * rate);
+
             status.innerHTML = `
-              <div>Masuk ${a.clock_in} · Pulang ${a.clock_out} · <strong>${a.work_hours || 0} jam kerja</strong></div>
-              <div style="display:flex;flex-direction:column;align-items:center;margin-top:2px;">
-                ${reportBadge}
-                ${reportNote}
+              <div style="font-weight:600;color:var(--info);">Status: Selesai Kerja</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+                Masuk ${a.clock_in} · Pulang ${a.clock_out} · ${a.work_hours || 0} jam kerja
               </div>
             `;
+
+            if (reportContainer) {
+              reportContainer.style.display = 'block';
+              reportContainer.innerHTML = `
+                <div class="data-card" style="padding:14px;border:1px solid rgba(59,130,246,0.3);background:linear-gradient(135deg, rgba(59,130,246,0.06), rgba(16,185,129,0.04));text-align:left;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <div style="font-size:12.5px;font-weight:700;color:var(--text-primary);letter-spacing:0.5px;">LAPORAN PEKERJAAN HARI INI</div>
+                    <button class="btn btn-ghost btn-sm" onclick="showTodayModalDirect()" style="padding:2px 8px;font-size:11px;">Rincian</button>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+                    <div><span style="color:var(--text-muted);">Akun Selesai:</span> <strong>${accounts} akun</strong></div>
+                    <div><span style="color:var(--text-muted);">Tarif per Akun:</span> <strong>Rp${rate.toLocaleString('id-ID')}</strong></div>
+                    <div style="grid-column:span 2;padding-top:6px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;">
+                      <span style="color:var(--text-muted);font-weight:600;">Pendapatan Sementara:</span>
+                      <strong style="color:var(--primary);font-size:15px;font-weight:800;">Rp${earnings.toLocaleString('id-ID')}</strong>
+                    </div>
+                  </div>
+                  ${a.work_report ? `<div style="font-size:11.5px;color:var(--text-muted);margin-top:8px;font-style:italic;">"${escapeHtml(a.work_report)}"</div>` : ''}
+                </div>
+              `;
+              window.lastTodayData = {
+                employee_name: data.user_name || (user ? user.name : '-'),
+                date: a.date,
+                clock_in: a.clock_in,
+                clock_out: a.clock_out,
+                accounts_created: accounts,
+                rate_per_account: rate,
+                daily_earnings: earnings,
+                work_report: a.work_report
+              };
+            }
           }
         } else {
           btnIn.disabled = false;
           btnOut.disabled = true;
-          status.innerHTML = '<span>Belum mencatat kehadiran hari ini</span>';
+          status.innerHTML = '<span>Belum mulai kerja hari ini</span>';
+          if (reportContainer) reportContainer.style.display = 'none';
         }
       } catch (err) {
         console.error(err);
+      }
+    }
+
+    function showTodayModalDirect() {
+      if (window.lastTodayData) {
+        openReportSummaryModal(window.lastTodayData);
       }
     }
 
@@ -521,7 +618,7 @@
       const workReport = notesInput.value.trim();
 
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span>Menyimpan...</span>';
+      submitBtn.innerHTML = '<span>Menyimpan & Menghitung...</span>';
 
       try {
         const data = await api.post('/attendance/clock-out', {
@@ -532,6 +629,11 @@
         closeClockOutModal();
         checkToday();
         loadHistory();
+
+        // Tampilkan modal hasil pekerjaan hari ini (Sesuai Gambar 4)
+        if (data.data) {
+          openReportSummaryModal(data.data);
+        }
       } catch (err) {
         showToast(err.message || 'Gagal mencatat jam pulang', 'error');
       } finally {
@@ -541,6 +643,56 @@
           <span>Kirim & Selesai Pulang</span>
         `;
       }
+    }
+
+    function openReportSummaryModal(report) {
+      if (!report) return;
+      const modal = document.getElementById('modal-report-summary');
+      const tbody = document.getElementById('summary-table-body');
+      if (!modal || !tbody) return;
+
+      const rate = report.rate_per_account || 500;
+      const accounts = report.accounts_created || 0;
+      const earnings = report.daily_earnings !== undefined ? report.daily_earnings : (accounts * rate);
+      const dateFormatted = formatDate(report.date || new Date().toISOString().split('T')[0]);
+
+      tbody.innerHTML = `
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 4px;color:var(--text-secondary);">Nama Karyawan</td>
+          <td style="padding:8px 4px;text-align:right;font-weight:700;color:var(--text-primary);">${report.employee_name || (user ? user.name : '-')}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 4px;color:var(--text-secondary);">Tanggal</td>
+          <td style="padding:8px 4px;text-align:right;font-weight:600;color:var(--text-primary);">${dateFormatted}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 4px;color:var(--text-secondary);">Jam Mulai</td>
+          <td style="padding:8px 4px;text-align:right;font-weight:600;color:var(--text-primary);">${report.clock_in || '-'}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 4px;color:var(--text-secondary);">Jam Selesai</td>
+          <td style="padding:8px 4px;text-align:right;font-weight:600;color:var(--text-primary);">${report.clock_out || '-'}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 4px;color:var(--text-secondary);">Akun Selesai</td>
+          <td style="padding:8px 4px;text-align:right;font-weight:700;color:var(--primary);">${accounts} akun</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 4px;color:var(--text-secondary);">Tarif per Akun</td>
+          <td style="padding:8px 4px;text-align:right;font-weight:600;color:var(--text-primary);">Rp${rate.toLocaleString('id-ID')}</td>
+        </tr>
+        <tr style="background:rgba(16,185,129,0.08);border-bottom:1px solid var(--border);">
+          <td style="padding:10px 4px;font-weight:700;color:var(--text-primary);">Pendapatan Hari Ini</td>
+          <td style="padding:10px 4px;text-align:right;font-size:15px;font-weight:800;color:var(--primary);">Rp${earnings.toLocaleString('id-ID')}</td>
+        </tr>
+      `;
+
+      modal.classList.add('active');
+    }
+
+    function closeReportSummaryModal() {
+      const modal = document.getElementById('modal-report-summary');
+      if (modal) modal.classList.remove('active');
     }
 
     // Close modal on backdrop click or Escape
@@ -631,8 +783,15 @@
         }
 
         container.innerHTML = data.attendance.map(a => {
+          const rate = a.rate_per_account || 500;
+          const accounts = a.accounts_created || 0;
+          const earnings = (a.daily_earnings !== undefined && a.daily_earnings !== null && a.daily_earnings > 0)
+            ? a.daily_earnings
+            : (accounts * rate);
+
           const accountsBadge = (a.clock_out)
-            ? `<span class="badge badge-primary" style="font-size:11px;padding:2px 8px;font-weight:600;">📦 ${a.accounts_created || 0} Akun</span>`
+            ? `<span class="badge badge-primary" style="font-size:11px;padding:2px 8px;font-weight:600;">📦 ${accounts} Akun</span>
+               <span class="badge badge-success" style="font-size:11px;padding:2px 8px;font-weight:600;">💰 Rp${earnings.toLocaleString('id-ID')}</span>`
             : '';
           const reportSnippet = a.work_report
             ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.35;word-break:break-word;">📝 ${escapeHtml(a.work_report)}</div>`
@@ -644,7 +803,7 @@
                   <span>${formatDate(a.date)}</span>
                   ${accountsBadge}
                 </div>
-                <div class="history-detail">Masuk: ${a.clock_in || '-'} · Pulang: ${a.clock_out || '-'} ${a.work_hours ? `· ${a.work_hours} jam` : ''}</div>
+                <div class="history-detail">Masuk: ${a.clock_in || '-'} · Pulang: ${a.clock_out || '-'} ${a.work_hours ? `· ${a.work_hours} jam` : ''} · Tarif: Rp${rate.toLocaleString('id-ID')}/akun</div>
                 ${reportSnippet}
               </div>
               <div style="margin-left:10px;flex-shrink:0;">${statusBadge(a.status)}</div>

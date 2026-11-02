@@ -3,18 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Laporan - AbsenKu</title>
+  <title>Laporan & Rekap Bulanan - AbsenKu</title>
   <link rel="stylesheet" href="css/admin.css">
   <style>
-    .report-form-grid {
+    .recap-grid-box {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 14px;
-      align-items: flex-end;
+      grid-template-columns: minmax(320px, 460px) 1fr;
+      gap: 20px;
+      align-items: start;
     }
-    @media (max-width: 768px) {
-      .report-form-grid {
+    @media (max-width: 900px) {
+      .recap-grid-box {
         grid-template-columns: 1fr;
+      }
+    }
+    .recap-summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    .recap-summary-table th, .recap-summary-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .recap-summary-table th {
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 11.5px;
+      letter-spacing: 0.5px;
+    }
+    .recap-summary-table td:last-child {
+      text-align: right;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .recap-actions-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    /* Slip Gaji Print Styles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-slip-modal, #print-slip-modal * {
+        visibility: visible;
+      }
+      #print-slip-modal {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: #fff !important;
+        color: #000 !important;
+        display: block !important;
+        padding: 24px;
+        z-index: 999999;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .slip-card {
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
+        color: #000 !important;
+        background: #fff !important;
       }
     }
   </style>
@@ -30,8 +89,8 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
           <div class="header-title-box">
-            <h1>Laporan</h1>
-            <div class="breadcrumb"><span>Rekapitulasi Kehadiran & Lembur</span></div>
+            <h1>Laporan & Penggajian</h1>
+            <div class="breadcrumb"><span>Rekap Bulanan, Slip Gaji & Koreksi Absensi</span></div>
           </div>
         </div>
         <div class="header-right">
@@ -40,89 +99,498 @@
       </header>
 
       <div class="page-content">
-        <!-- Form filter laporan -->
-        <div class="data-card mb-2">
-          <div class="data-card-header">
-            <h3>Buat Laporan Presensi</h3>
+        <!-- Tabs Header -->
+        <nav class="tab-nav mb-2">
+          <button class="tab-btn active" onclick="switchReportTab('recap', this)">
+            <span>📊 6. Fitur Rekap Bulanan & Gaji</span>
+          </button>
+          <button class="tab-btn" onclick="switchReportTab('logs', this)">
+            <span>📝 Log Detail & Koreksi Absensi</span>
+          </button>
+        </nav>
+
+        <!-- ============================================== -->
+        <!-- TAB 1: FITUR REKAP BULANAN & GAJI (GAMBAR 2)  -->
+        <!-- ============================================== -->
+        <div class="tab-content active" id="tab-recap">
+          <!-- Filter Bar Rekap Bulanan -->
+          <div class="data-card mb-2">
+            <div class="data-card-body" style="padding:14px 18px;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;align-items:flex-end;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="recap-month" style="font-weight:600;font-size:12px;">Pilih Periode Bulan</label>
+                  <input type="month" class="form-control" id="recap-month">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="recap-emp" style="font-weight:600;font-size:12px;">Karyawan</label>
+                  <select class="form-control" id="recap-emp">
+                    <option value="">Semua Karyawan (Total Tim)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="recap-dept" style="font-weight:600;font-size:12px;">Departemen</label>
+                  <select class="form-control" id="recap-dept">
+                    <option value="">Semua Departemen</option>
+                  </select>
+                </div>
+                <div>
+                  <button class="btn btn-primary btn-block" onclick="loadMonthlyRecap()" style="height:38px;font-weight:600;">
+                    Tampilkan Rekap
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="data-card-body">
-            <div class="report-form-grid">
-              <div class="form-group" style="margin-bottom:0;">
-                <label for="r-start">Dari Tanggal</label>
-                <input type="date" class="form-control" id="r-start">
+
+          <!-- Highlight Box Sesuai Gambar 2 (Fitur Rekap Bulanan) -->
+          <div class="recap-grid-box mb-2">
+            <!-- Box Gambar 2: Data | Contoh / Hasil -->
+            <div class="data-card" style="border:1.5px solid rgba(16,185,129,0.35);background:linear-gradient(135deg, rgba(16,185,129,0.06), rgba(59,130,246,0.03));">
+              <div class="data-card-header" style="border-bottom:1px solid rgba(16,185,129,0.2);padding-bottom:12px;">
+                <div>
+                  <h3 style="font-size:15px;margin:0;font-weight:700;color:var(--text-primary);">6. Fitur Rekap Bulanan</h3>
+                  <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;" id="recap-target-title">Periode Bulan Ini</div>
+                </div>
+                <span class="badge badge-primary" id="recap-badge-scope" style="font-size:11px;">Semua Karyawan</span>
               </div>
-              <div class="form-group" style="margin-bottom:0;">
-                <label for="r-end">Sampai Tanggal</label>
-                <input type="date" class="form-control" id="r-end">
+              <div class="data-card-body" style="padding:14px;">
+                <table class="recap-summary-table">
+                  <thead>
+                    <tr>
+                      <th style="text-align:left;">Data</th>
+                      <th style="text-align:right;">Hasil / Nilai</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="color:var(--text-secondary);">Total hari kerja</td>
+                      <td id="m-work-days">25 hari</td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">Total hadir</td>
+                      <td id="m-present" style="color:var(--success);">0 hari</td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">Total izin</td>
+                      <td id="m-leave" style="color:var(--warning);">0 hari</td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">Total akun selesai</td>
+                      <td id="m-accounts" style="color:var(--primary);font-size:14.5px;">0 akun</td>
+                    </tr>
+                    <tr style="background:rgba(16,185,129,0.08);">
+                      <td style="font-weight:700;color:var(--text-primary);">Total upah</td>
+                      <td id="m-wages" style="font-size:16px;font-weight:800;color:var(--primary);">Rp0</td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">Status pembayaran</td>
+                      <td>
+                        <span class="badge badge-warning" id="m-payment-status" style="font-size:11.5px;font-weight:700;">Belum dibayar</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:10px;font-style:italic;">
+                  Data dihitung otomatis berdasarkan tarif per akun yang berlaku saat pekerjaan selesai.
+                </div>
+
+                <!-- 3 Tombol Wajib Sesuai Gambar 2 -->
+                <div class="recap-actions-row">
+                  <button type="button" class="btn btn-ghost" onclick="viewCurrentRecapDetail()" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12.5px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Lihat Detail</span>
+                  </button>
+                  <button type="button" class="btn btn-ghost" onclick="downloadRecapExcel()" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12.5px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Unduh Rekap Excel</span>
+                  </button>
+                  <button type="button" class="btn btn-primary" onclick="printCurrentSlipGaji()" style="flex:1.2;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12.5px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    <span>Cetak Slip Gaji</span>
+                  </button>
+                </div>
               </div>
-              <div class="form-group" style="margin-bottom:0;">
-                <label for="r-department">Departemen</label>
-                <select class="form-control" id="r-department">
-                  <option value="">Semua Departemen</option>
-                </select>
+            </div>
+
+            <!-- Petunjuk & Tombol Aksi Massal -->
+            <div class="data-card" style="height:100%;">
+              <div class="data-card-header">
+                <h3>Kelola Status Pembayaran Tim</h3>
               </div>
+              <div class="data-card-body" style="font-size:13px;line-height:1.5;">
+                <p style="color:var(--text-secondary);margin-top:0;">
+                  Fitur ini memudahkan Anda mengevaluasi kinerja tim bulanan, memeriksa akumulasi hasil akun yang telah diselesaikan, dan memproses penggajian secara transparan.
+                </p>
+                <div style="background:var(--card-hover);padding:12px;border-radius:10px;margin-bottom:14px;border:1px solid var(--border);">
+                  <div style="font-weight:600;margin-bottom:4px;color:var(--text-primary);">Aksi Penggajian Periode Ini:</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                    <button class="btn btn-success btn-sm" onclick="toggleBatchPayment('paid')" style="display:inline-flex;align-items:center;gap:5px;">
+                      <span>✓ Tandai Semua Lunas</span>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="toggleBatchPayment('unpaid')" style="display:inline-flex;align-items:center;gap:5px;">
+                      <span>↺ Setel Ulang (Belum Bayar)</span>
+                    </button>
+                  </div>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">
+                  💡 <em>Tarif per akun tersimpan permanen per hari kerja sehingga kenaikan tarif baru tidak akan mengubah riwayat bulan sebelumnya.</em>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabel Rekap Per Karyawan -->
+          <div class="data-card">
+            <div class="data-card-header">
               <div>
-                <button class="btn btn-primary btn-block" id="btn-generate" style="height:38px;">Tampilkan Data</button>
+                <h3 style="margin:0;">Rincian Gaji & Kinerja per Karyawan</h3>
+                <span style="font-size:11.5px;color:var(--text-muted);">Klik "Detail" untuk melihat hari kerja atau "Slip" untuk mencetak slip gaji individual</span>
               </div>
+            </div>
+            <div class="data-table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Karyawan</th>
+                    <th>Departemen</th>
+                    <th>Hadir</th>
+                    <th>Izin</th>
+                    <th>Akun Selesai</th>
+                    <th>Tarif per Akun</th>
+                    <th>Total Upah</th>
+                    <th>Status Gaji</th>
+                    <th style="text-align:right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="recap-emp-tbody">
+                  <tr><td colspan="9" class="text-center text-muted" style="padding:28px;">Memuat rekap karyawan...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        <!-- Clean Stat Cards (No Emoji Icons, No Box Wrappers) -->
-        <div class="stats-grid" id="report-summary" style="display:none;">
-          <div class="stat-card primary">
-            <div class="stat-label">Total Data</div>
-            <div class="stat-value" id="r-total">0</div>
+        <!-- ============================================== -->
+        <!-- TAB 2: LOG DETAIL & KOREKSI ABSENSI           -->
+        <!-- ============================================== -->
+        <div class="tab-content" id="tab-logs">
+          <div class="data-card mb-2">
+            <div class="data-card-body" style="padding:14px 18px;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;align-items:flex-end;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="log-start" style="font-weight:600;font-size:12px;">Dari Tanggal</label>
+                  <input type="date" class="form-control" id="log-start">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="log-end" style="font-weight:600;font-size:12px;">Sampai Tanggal</label>
+                  <input type="date" class="form-control" id="log-end">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="log-dept" style="font-weight:600;font-size:12px;">Departemen</label>
+                  <select class="form-control" id="log-dept">
+                    <option value="">Semua Departemen</option>
+                  </select>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-primary" onclick="loadAttendanceLogs()" style="flex:1;height:38px;font-weight:600;">
+                    Filter Data
+                  </button>
+                  <button class="btn btn-ghost" onclick="openManualAttendanceModal()" style="height:38px;font-weight:600;" title="Input Presensi Manual">
+                    + Input Manual
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="stat-card primary" style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.03));border:1px solid rgba(16,185,129,0.3);">
-            <div class="stat-label" style="color:var(--primary);font-weight:600;">Total Akun Dikerjakan</div>
-            <div class="stat-value" id="r-accounts" style="color:var(--primary);">0</div>
-          </div>
-          <div class="stat-card success">
-            <div class="stat-label">Hadir</div>
-            <div class="stat-value" id="r-present">0</div>
-          </div>
-          <div class="stat-card warning">
-            <div class="stat-label">Terlambat</div>
-            <div class="stat-value" id="r-late">0</div>
-          </div>
-          <div class="stat-card danger">
-            <div class="stat-label">Tidak Hadir</div>
-            <div class="stat-value" id="r-absent">0</div>
-          </div>
-          <div class="stat-card info">
-            <div class="stat-label">Izin & Cuti</div>
-            <div class="stat-value" id="r-leave">0</div>
-          </div>
-        </div>
 
-        <!-- Table Data -->
-        <div class="data-card" id="report-table" style="display:none;">
-          <div class="data-card-header">
-            <h3>Hasil Laporan</h3>
-            <button class="btn btn-ghost btn-sm" id="btn-export-report">Export CSV</button>
-          </div>
-          <div class="data-table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Karyawan</th>
-                  <th>Departemen</th>
-                  <th>Tanggal</th>
-                  <th>Masuk</th>
-                  <th>Pulang</th>
-                  <th>Status</th>
-                  <th>Durasi Kerja</th>
-                  <th>Lembur</th>
-                  <th>Hasil Akun</th>
-                </tr>
-              </thead>
-              <tbody id="report-tbody"></tbody>
-            </table>
+          <div class="data-card">
+            <div class="data-card-header">
+              <div>
+                <h3 style="margin:0;">Pemeriksaan & Koreksi Absensi</h3>
+                <span style="font-size:11.5px;color:var(--text-muted);">Mekanisme koreksi admin jika ada kendala teknis atau kondisi darurat</span>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="exportLogsCSV()">Export CSV</button>
+            </div>
+            <div class="data-table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Karyawan</th>
+                    <th>Tanggal</th>
+                    <th>Masuk</th>
+                    <th>Pulang</th>
+                    <th>Status</th>
+                    <th>Durasi</th>
+                    <th>Akun Selesai</th>
+                    <th>Tarif & Upah</th>
+                    <th>Laporan</th>
+                    <th style="text-align:right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-tbody">
+                  <tr><td colspan="10" class="text-center text-muted" style="padding:28px;">Memuat catatan presensi...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: LIHAT DETAIL PEKERJAAN (GAMBAR 2)       -->
+  <!-- ============================================== -->
+  <div class="confirm-dialog-overlay" id="modal-view-detail">
+    <div class="confirm-dialog-card" style="max-width:760px;width:95%;max-height:90vh;display:flex;flex-direction:column;" role="dialog" aria-modal="true">
+      <div class="confirm-dialog-header" style="justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px;">
+        <div>
+          <h3 style="margin:0;font-size:16px;" id="modal-detail-title">Detail Riwayat Pekerjaan</h3>
+          <span style="font-size:12px;color:var(--text-muted);" id="modal-detail-subtitle">-</span>
+        </div>
+        <button type="button" onclick="closeModal('modal-view-detail')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1;">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px 0;">
+        <table class="data-table" style="font-size:12.5px;">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Masuk</th>
+              <th>Pulang</th>
+              <th>Durasi</th>
+              <th>Akun Selesai</th>
+              <th>Tarif per Akun</th>
+              <th>Pendapatan Harian</th>
+              <th>Status</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody id="modal-detail-tbody"></tbody>
+        </table>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
+        <div id="modal-detail-footer-summary" style="font-weight:700;font-size:13px;color:var(--primary);">-</div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal('modal-view-detail')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: CETAK SLIP GAJI (GAMBAR 2)              -->
+  <!-- ============================================== -->
+  <div class="confirm-dialog-overlay" id="print-slip-modal">
+    <div class="confirm-dialog-card slip-card" style="max-width:540px;width:95%;background:var(--card-bg);border:1px solid var(--border);padding:24px;" role="dialog" aria-modal="true">
+      <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        <span style="font-weight:700;font-size:14px;color:var(--primary);">Pratinjau Slip Gaji Resmi</span>
+        <button type="button" onclick="closeModal('print-slip-modal')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1;">✕</button>
+      </div>
+
+      <!-- Kop Slip Gaji -->
+      <div style="text-align:center;border-bottom:2px solid var(--border);padding-bottom:14px;margin-bottom:16px;">
+        <h2 style="margin:0;font-size:18px;letter-spacing:1px;font-weight:800;color:var(--text-primary);">DIGISTORE - PRODUK DIGITAL & AKUN TIKTOK</h2>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">SLIP GAJI & HONOR PENGERJAAN AKUN</div>
+        <div style="font-size:11.5px;color:var(--primary);font-weight:600;margin-top:2px;" id="slip-period-text">Periode: -</div>
+      </div>
+
+      <!-- Info Identitas Karyawan -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px;margin-bottom:16px;">
+        <div><span style="color:var(--text-muted);">Nama Karyawan:</span> <strong id="slip-name">-</strong></div>
+        <div><span style="color:var(--text-muted);">ID Karyawan:</span> <strong id="slip-empid">-</strong></div>
+        <div><span style="color:var(--text-muted);">Departemen:</span> <strong id="slip-dept">-</strong></div>
+        <div><span style="color:var(--text-muted);">Jabatan:</span> <strong id="slip-pos">-</strong></div>
+      </div>
+
+      <!-- Rincian Gaji & Akun Selesai (Format Sesuai Gambar 2 & 5) -->
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px;">
+        <thead>
+          <tr style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--card-hover);">
+            <th style="padding:7px;text-align:left;">Komponen / Rincian</th>
+            <th style="padding:7px;text-align:right;">Jumlah / Hasil</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px 6px;">Total Hari Hadir</td>
+            <td style="padding:8px 6px;text-align:right;" id="slip-days-present">-</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px 6px;">Total Izin / Cuti</td>
+            <td style="padding:8px 6px;text-align:right;" id="slip-days-leave">-</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px 6px;">Total Akun Selesai Dikerjakan</td>
+            <td style="padding:8px 6px;text-align:right;font-weight:700;" id="slip-total-accounts">-</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:8px 6px;">Tarif per Akun</td>
+            <td style="padding:8px 6px;text-align:right;" id="slip-rate-per-account">-</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);" id="slip-row-bonus">
+            <td style="padding:8px 6px;">Bonus Target</td>
+            <td style="padding:8px 6px;text-align:right;" id="slip-bonus-target">Rp0</td>
+          </tr>
+          <tr style="background:rgba(16,185,129,0.08);border-bottom:2px solid var(--border);">
+            <td style="padding:10px 6px;font-weight:800;font-size:13.5px;color:var(--text-primary);">TOTAL PENDAPATAN AKHIR</td>
+            <td style="padding:10px 6px;text-align:right;font-weight:800;font-size:16px;color:var(--primary);" id="slip-total-wages">-</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 6px;color:var(--text-muted);">Status Pembayaran</td>
+            <td style="padding:8px 6px;text-align:right;font-weight:700;" id="slip-pay-status">-</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Tanda Tangan -->
+      <div style="display:flex;justify-content:space-between;margin-top:24px;text-align:center;font-size:12px;">
+        <div style="width:160px;">
+          <div>Diserahkan oleh,</div>
+          <div style="height:48px;"></div>
+          <div style="border-top:1px solid var(--text-muted);padding-top:4px;font-weight:600;">Admin / HRD</div>
+        </div>
+        <div style="width:160px;">
+          <div>Diterima oleh,</div>
+          <div style="height:48px;"></div>
+          <div style="border-top:1px solid var(--text-muted);padding-top:4px;font-weight:600;" id="slip-sig-name">Karyawan</div>
+        </div>
+      </div>
+
+      <!-- Tombol Print (Sembunyi saat cetak) -->
+      <div class="no-print" style="margin-top:24px;border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:flex-end;gap:10px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('print-slip-modal')">Batal</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;font-weight:600;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span>Cetak Sekarang</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: KOREKSI PRESENSI ADMIN (GAMBAR 2 TOP)   -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="modal-correction">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 id="correction-modal-title">Koreksi Data Absensi</h3>
+        <button class="modal-close" onclick="closeModal('modal-correction')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-correction" onsubmit="handleSaveCorrection(event)">
+          <input type="hidden" id="c-att-id">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Nama Karyawan</label>
+              <input type="text" class="form-control readonly-highlight" id="c-emp-name" readonly>
+            </div>
+            <div class="form-group">
+              <label>Tanggal</label>
+              <input type="text" class="form-control readonly-highlight" id="c-date" readonly>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="c-clock-in">Jam Masuk (HH:MM)</label>
+              <input type="time" class="form-control" id="c-clock-in">
+            </div>
+            <div class="form-group">
+              <label for="c-clock-out">Jam Pulang (HH:MM)</label>
+              <input type="time" class="form-control" id="c-clock-out">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="c-accounts">Akun Selesai</label>
+              <input type="number" class="form-control" id="c-accounts" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="c-rate">Tarif per Akun (Rp)</label>
+              <input type="number" class="form-control" id="c-rate" min="0" required>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="c-status">Status Kehadiran</label>
+              <select class="form-control" id="c-status">
+                <option value="present">Hadir (Tepat Waktu)</option>
+                <option value="late">Terlambat</option>
+                <option value="absent">Tidak Hadir (Alfa)</option>
+                <option value="leave">Izin / Cuti</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="c-pay-status">Status Pembayaran</label>
+              <select class="form-control" id="c-pay-status">
+                <option value="unpaid">Belum dibayar</option>
+                <option value="paid">Sudah dibayar (Lunas)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="c-report">Catatan / Keterangan Koreksi</label>
+            <textarea class="form-control" id="c-report" rows="2" placeholder="Alasan koreksi (misal kendala jaringan/perbaikan manual)"></textarea>
+          </div>
+          <div class="mt-1" style="display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('modal-correction')">Batal</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-correction">Simpan Koreksi</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: INPUT PRESENSI MANUAL OLEH ADMIN        -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="modal-manual-att">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Input Presensi Manual (Darurat)</h3>
+        <button class="modal-close" onclick="closeModal('modal-manual-att')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-manual-att" onsubmit="handleSaveManualAtt(event)">
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="m-user-id">Pilih Karyawan *</label>
+              <select class="form-control" id="m-user-id" required></select>
+            </div>
+            <div class="form-group">
+              <label for="m-input-date">Tanggal *</label>
+              <input type="date" class="form-control" id="m-input-date" required>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="m-clock-in">Jam Masuk (HH:MM)</label>
+              <input type="time" class="form-control" id="m-clock-in" value="08:00">
+            </div>
+            <div class="form-group">
+              <label for="m-clock-out">Jam Pulang (HH:MM)</label>
+              <input type="time" class="form-control" id="m-clock-out" value="17:00">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="m-accounts-count">Akun Selesai</label>
+              <input type="number" class="form-control" id="m-accounts-count" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label for="m-rate-input">Tarif per Akun (Rp)</label>
+              <input type="number" class="form-control" id="m-rate-input" min="0" placeholder="Biarkan kosong untuk gunakan tarif profil">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="m-reason">Keterangan / Laporan Pekerjaan</label>
+            <textarea class="form-control" id="m-reason" rows="2" placeholder="Catatan input manual admin"></textarea>
+          </div>
+          <div class="mt-1" style="display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('modal-manual-att')">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan Presensi</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <div id="toast-container" class="toast-container"></div>
@@ -134,79 +602,447 @@
     renderSidebar();
     setupSidebar('reports.html');
 
-    let reportData = [];
+    let currentRecapData = null;
+    let allEmployeeOptions = [];
+    let logRecords = [];
 
+    // Set default month to current year-month
     const now = new Date();
-    document.getElementById('r-start').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
-    document.getElementById('r-end').value = now.toISOString().split('T')[0];
+    const curYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('recap-month').value = curYearMonth;
 
-    async function init() {
-      try {
-        const depts = await api.get('/departments');
-        document.getElementById('r-department').innerHTML = '<option value="">Semua Departemen</option>' +
-          (depts.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-        refreshSelect('r-department');
-      } catch (err) {}
+    // Set default dates for logs tab
+    document.getElementById('log-start').value = `${curYearMonth}-01`;
+    document.getElementById('log-end').value = now.toISOString().split('T')[0];
+    document.getElementById('m-input-date').value = now.toISOString().split('T')[0];
+
+    function switchReportTab(tab, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      btn.classList.add('active');
+
+      if (tab === 'recap') loadMonthlyRecap();
+      if (tab === 'logs') loadAttendanceLogs();
     }
 
-    document.getElementById('btn-generate').addEventListener('click', async () => {
-      const start = document.getElementById('r-start').value;
-      const end = document.getElementById('r-end').value;
-      const dept = document.getElementById('r-department').value;
-      if (!start || !end) return showToast('Pilih rentang tanggal terlebih dahulu', 'warning');
-
+    async function initOptions() {
       try {
+        const [depts, users] = await Promise.all([
+          api.get('/departments'),
+          api.get('/users?role=employee&limit=100')
+        ]);
+
+        const deptOptions = '<option value="">Semua Departemen</option>' +
+          (depts.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        document.getElementById('recap-dept').innerHTML = deptOptions;
+        document.getElementById('log-dept').innerHTML = deptOptions;
+
+        allEmployeeOptions = users.users || [];
+        const empOptions = '<option value="">Semua Karyawan (Total Tim)</option>' +
+          allEmployeeOptions.map(u => `<option value="${u.id}">${u.name} (${u.employee_id})</option>`).join('');
+        document.getElementById('recap-emp').innerHTML = empOptions;
+
+        const manualEmpSelect = document.getElementById('m-user-id');
+        manualEmpSelect.innerHTML = allEmployeeOptions.map(u => `<option value="${u.id}">${u.name} (${u.employee_id})</option>`).join('');
+
+        refreshSelect('recap-month');
+        refreshSelect('recap-dept');
+        refreshSelect('recap-emp');
+        refreshSelect('log-dept');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadMonthlyRecap() {
+      try {
+        const month = document.getElementById('recap-month').value || curYearMonth;
+        const userId = document.getElementById('recap-emp').value;
+        const deptId = document.getElementById('recap-dept').value;
+
+        let url = `/attendance/monthly-recap?month=${month}`;
+        if (userId) url += `&user_id=${userId}`;
+        if (deptId) url += `&department_id=${deptId}`;
+
+        const data = await api.get(url);
+        currentRecapData = data;
+
+        const [y, m] = month.split('-');
+        const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const monthText = `${monthNames[parseInt(m,10)-1]} ${y}`;
+
+        document.getElementById('recap-target-title').textContent = `Periode: ${monthText}`;
+
+        // Determine if viewing single employee or overall team
+        if (userId && data.employees && data.employees.length === 1) {
+          const emp = data.employees[0];
+          document.getElementById('recap-badge-scope').textContent = emp.name;
+          document.getElementById('m-work-days').textContent = `${data.summary.total_hari_kerja}`;
+          document.getElementById('m-present').textContent = `${emp.days_present} hari`;
+          document.getElementById('m-leave').textContent = `${emp.days_leave} hari`;
+          document.getElementById('m-accounts').textContent = `${emp.total_accounts} akun`;
+          document.getElementById('m-wages').textContent = `Rp${emp.total_wages.toLocaleString('id-ID')}`;
+          
+          const payEl = document.getElementById('m-payment-status');
+          payEl.textContent = emp.payment_status;
+          payEl.className = emp.payment_status === 'Sudah dibayar' ? 'badge badge-success' : 'badge badge-warning';
+        } else {
+          document.getElementById('recap-badge-scope').textContent = 'Semua Karyawan (Total Tim)';
+          document.getElementById('m-work-days').textContent = data.summary.total_hari_kerja;
+          document.getElementById('m-present').textContent = data.summary.total_hadir;
+          document.getElementById('m-leave').textContent = data.summary.total_izin;
+          document.getElementById('m-accounts').textContent = data.summary.total_akun_selesai;
+          document.getElementById('m-wages').textContent = data.summary.total_upah;
+
+          const payEl = document.getElementById('m-payment-status');
+          payEl.textContent = data.summary.status_pembayaran;
+          payEl.className = data.summary.status_pembayaran === 'Sudah dibayar' ? 'badge badge-success' : 'badge badge-warning';
+        }
+
+        // Render per-employee table
+        const tbody = document.getElementById('recap-emp-tbody');
+        if (!data.employees || data.employees.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:28px;">Tidak ada data karyawan</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.employees.map(e => `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar">${getInitials(e.name)}</div>
+                <div class="user-details">
+                  <div class="name">${e.name}</div>
+                  <div class="emp-id">${e.employee_id} · ${e.position}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Departemen">${e.department_name}</td>
+            <td data-label="Hadir" style="font-weight:600;color:var(--success);">${e.days_present} hari</td>
+            <td data-label="Izin" style="font-weight:600;color:var(--warning);">${e.days_leave} hari</td>
+            <td data-label="Akun Selesai">
+              <span class="badge badge-primary font-bold">📦 ${e.total_accounts} Akun</span>
+            </td>
+            <td data-label="Tarif per Akun">Rp${e.rate_per_account.toLocaleString('id-ID')}</td>
+            <td data-label="Total Upah" style="font-size:14px;font-weight:800;color:var(--primary);">
+              Rp${e.total_wages.toLocaleString('id-ID')}
+            </td>
+            <td data-label="Status Gaji">
+              <span class="badge ${e.payment_status === 'Sudah dibayar' ? 'badge-success' : 'badge-warning'}" style="font-size:11px;font-weight:700;">
+                ${e.payment_status}
+              </span>
+            </td>
+            <td class="table-actions-cell" style="text-align:right;">
+              <div class="table-actions" style="justify-content:flex-end;">
+                <button class="btn btn-ghost btn-sm" onclick="openEmployeeDetail(${e.user_id})" title="Lihat Riwayat Hari Kerja">
+                  Lihat Detail
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="openSlipGajiModal(${e.user_id})" title="Cetak Slip Gaji">
+                  Cetak Slip
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleSinglePayment(${e.user_id}, '${e.payment_status === 'Sudah dibayar' ? 'unpaid' : 'paid'}')" title="Ubah Status Pembayaran">
+                  ${e.payment_status === 'Sudah dibayar' ? 'Batal Lunas' : 'Tandai Lunas'}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Modal: Detail Hari Kerja Karyawan
+    function openEmployeeDetail(userId) {
+      if (!currentRecapData || !currentRecapData.employees) return;
+      const emp = currentRecapData.employees.find(e => e.user_id === userId);
+      if (!emp) return;
+
+      document.getElementById('modal-detail-title').textContent = `Detail Hari Kerja: ${emp.name} (${emp.employee_id})`;
+      document.getElementById('modal-detail-subtitle').textContent = `Departemen: ${emp.department_name} · Tarif Default: Rp${emp.rate_per_account.toLocaleString('id-ID')}/akun`;
+
+      const tbody = document.getElementById('modal-detail-tbody');
+      if (!emp.records || emp.records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:24px;">Belum ada catatan presensi pada periode bulan ini</td></tr>';
+      } else {
+        tbody.innerHTML = emp.records.map(r => `
+          <tr>
+            <td style="font-weight:600;">${formatDate(r.date)}</td>
+            <td>${r.clock_in}</td>
+            <td>${r.clock_out}</td>
+            <td>${r.work_hours} jam</td>
+            <td><span class="badge badge-primary font-bold">📦 ${r.accounts_created}</span></td>
+            <td>Rp${(r.rate_per_account || emp.rate_per_account).toLocaleString('id-ID')}</td>
+            <td style="font-weight:700;color:var(--primary);">Rp${(r.daily_earnings || (r.accounts_created * r.rate_per_account)).toLocaleString('id-ID')}</td>
+            <td>${statusBadge(r.status)}</td>
+            <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(r.work_report)}">
+              ${r.work_report ? escapeHtml(r.work_report) : '-'}
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('modal-detail-footer-summary').textContent =
+        `Total: ${emp.records.length} Hari Kehadiran · ${emp.total_accounts} Akun Selesai · Upah Terakumulasi: Rp${emp.total_wages.toLocaleString('id-ID')}`;
+
+      openModal('modal-view-detail');
+    }
+
+    function viewCurrentRecapDetail() {
+      const selectedUserId = document.getElementById('recap-emp').value;
+      if (selectedUserId) {
+        openEmployeeDetail(parseInt(selectedUserId, 10));
+      } else if (currentRecapData && currentRecapData.employees && currentRecapData.employees.length > 0) {
+        openEmployeeDetail(currentRecapData.employees[0].user_id);
+      } else {
+        showToast('Pilih karyawan terlebih dahulu untuk melihat detail', 'info');
+      }
+    }
+
+    // Modal: Slip Gaji Resmi (Sesuai Gambar 2)
+    function openSlipGajiModal(userId) {
+      if (!currentRecapData || !currentRecapData.employees) return;
+      const emp = currentRecapData.employees.find(e => e.user_id === userId);
+      if (!emp) return;
+
+      const month = document.getElementById('recap-month').value || curYearMonth;
+      const [y, m] = month.split('-');
+      const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      const monthText = `${monthNames[parseInt(m,10)-1]} ${y}`;
+
+      document.getElementById('slip-period-text').textContent = `Periode: ${monthText}`;
+      document.getElementById('slip-name').textContent = emp.name;
+      document.getElementById('slip-empid').textContent = emp.employee_id;
+      document.getElementById('slip-dept').textContent = emp.department_name;
+      document.getElementById('slip-pos').textContent = emp.position;
+      document.getElementById('slip-days-present').textContent = `${emp.days_present} hari kerja`;
+      document.getElementById('slip-days-leave').textContent = `${emp.days_leave} hari`;
+      document.getElementById('slip-total-accounts').textContent = `${emp.total_accounts} akun`;
+      document.getElementById('slip-rate-per-account').textContent = `Rp${emp.rate_per_account.toLocaleString('id-ID')} / akun`;
+      document.getElementById('slip-bonus-target').textContent = `Rp${(emp.bonus_earned || 0).toLocaleString('id-ID')}`;
+      document.getElementById('slip-total-wages').textContent = `Rp${emp.total_wages.toLocaleString('id-ID')}`;
+      document.getElementById('slip-pay-status').innerHTML = emp.payment_status === 'Sudah dibayar'
+        ? '<span style="color:#22c55e;">✓ LUNAS / SUDAH DIBAYAR</span>'
+        : '<span style="color:#eab308;">⏳ BELUM DIBAYAR</span>';
+      document.getElementById('slip-sig-name').textContent = emp.name;
+
+      openModal('print-slip-modal');
+    }
+
+    function printCurrentSlipGaji() {
+      const selectedUserId = document.getElementById('recap-emp').value;
+      if (selectedUserId) {
+        openSlipGajiModal(parseInt(selectedUserId, 10));
+      } else if (currentRecapData && currentRecapData.employees && currentRecapData.employees.length > 0) {
+        openSlipGajiModal(currentRecapData.employees[0].user_id);
+      } else {
+        showToast('Pilih karyawan untuk mencetak slip gaji', 'info');
+      }
+    }
+
+    // Unduh Rekap Excel / CSV (Sesuai Gambar 2)
+    function downloadRecapExcel() {
+      if (!currentRecapData || !currentRecapData.employees || currentRecapData.employees.length === 0) {
+        return showToast('Tidak ada data rekap untuk diunduh', 'warning');
+      }
+      const month = document.getElementById('recap-month').value || curYearMonth;
+      const exportList = currentRecapData.employees.map(e => ({
+        ID_Karyawan: e.employee_id,
+        Nama_Karyawan: e.name,
+        Departemen: e.department_name,
+        Jabatan: e.position,
+        Periode_Bulan: month,
+        Hari_Hadir: e.days_present,
+        Hari_Izin: e.days_leave,
+        Total_Akun_Selesai: e.total_accounts,
+        Tarif_Per_Akun: e.rate_per_account,
+        Bonus_Target: e.bonus_earned || 0,
+        Total_Upah_Rupiah: e.total_wages,
+        Status_Pembayaran: e.payment_status
+      }));
+
+      exportToCSV(exportList, `rekap_bulanan_gaji_${month}`);
+      showToast('Rekap Excel / CSV berhasil diunduh', 'success');
+    }
+
+    // Toggle Status Pembayaran
+    async function toggleSinglePayment(userId, status) {
+      const month = document.getElementById('recap-month').value || curYearMonth;
+      try {
+        await api.put('/attendance/payment-status', { user_id: userId, month, status });
+        showToast('Status pembayaran berhasil diperbarui', 'success');
+        loadMonthlyRecap();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function toggleBatchPayment(status) {
+      const month = document.getElementById('recap-month').value || curYearMonth;
+      const confirmed = await showConfirm({
+        title: status === 'paid' ? 'Tandai Semua Lunas' : 'Setel Ulang Status Pembayaran',
+        message: `Apakah Anda yakin ingin mengubah seluruh status pembayaran bulan ${month} menjadi "${status === 'paid' ? 'Sudah dibayar' : 'Belum dibayar'}"?`,
+        confirmText: 'Ya, Lanjutkan',
+        cancelText: 'Batal'
+      });
+      if (!confirmed) return;
+      try {
+        await api.put('/attendance/payment-status', { month, status });
+        showToast('Status pembayaran seluruh karyawan berhasil diupdate', 'success');
+        loadMonthlyRecap();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    // TAB 2: LOG DETAIL & KOREKSI ABSENSI
+    async function loadAttendanceLogs() {
+      try {
+        const start = document.getElementById('log-start').value;
+        const end = document.getElementById('log-end').value;
+        const dept = document.getElementById('log-dept').value;
+
         let url = `/attendance/report?start_date=${start}&end_date=${end}`;
         if (dept) url += `&department=${dept}`;
+
         const data = await api.get(url);
-        reportData = data.report || [];
+        logRecords = data.report || [];
 
-        document.getElementById('report-summary').style.display = 'grid';
-        document.getElementById('report-table').style.display = 'block';
+        const tbody = document.getElementById('logs-tbody');
+        if (logRecords.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted" style="padding:28px;">Tidak ada catatan presensi pada rentang tanggal ini</td></tr>';
+          return;
+        }
 
-        document.getElementById('r-total').textContent = data.summary.total_records;
-        document.getElementById('r-accounts').textContent = data.summary.total_accounts || 0;
-        document.getElementById('r-present').textContent = data.summary.present;
-        document.getElementById('r-late').textContent = data.summary.late;
-        document.getElementById('r-absent').textContent = data.summary.absent;
-        document.getElementById('r-leave').textContent = data.summary.leave;
+        tbody.innerHTML = logRecords.map(r => {
+          const rate = r.rate_per_account || 500;
+          const accounts = r.accounts_created || 0;
+          const earnings = (r.daily_earnings !== undefined && r.daily_earnings !== null && r.daily_earnings > 0)
+            ? r.daily_earnings
+            : (accounts * rate);
 
-        const tbody = document.getElementById('report-tbody');
-        if (reportData.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:28px;">Tidak ada data pada periode ini</td></tr>';
-        } else {
-          tbody.innerHTML = reportData.map(r => `
+          return `
             <tr>
               <td>
                 <div class="user-cell">
                   <div class="avatar">${getInitials(r.name)}</div>
                   <div class="user-details">
                     <div class="name">${r.name}</div>
-                    <div class="emp-id">${r.employee_id}</div>
+                    <div class="emp-id">${r.employee_id} · ${r.department_name || '-'}</div>
                   </div>
                 </div>
               </td>
-              <td data-label="Departemen">${r.department_name || '-'}</td>
-              <td data-label="Tanggal">${formatDate(r.date)}</td>
-              <td data-label="Jam Masuk" style="font-weight:600;">${r.clock_in || '-'}</td>
-              <td data-label="Jam Pulang" style="font-weight:600;">${r.clock_out || '-'}</td>
-              <td data-label="Status Kehadiran">${statusBadge(r.status)}</td>
-              <td data-label="Durasi Kerja">${r.work_hours ? r.work_hours + ' jam' : '-'}</td>
-              <td data-label="Lembur">${r.overtime_hours > 0 ? '<span style="color:var(--warning);font-weight:600;">' + r.overtime_hours + ' jam</span>' : '-'}</td>
-              <td data-label="Hasil Akun">
-                <span class="badge badge-primary font-bold">📦 ${r.accounts_created || 0} Akun</span>
-                ${r.work_report ? `<div class="text-muted" style="font-size:11px;margin-top:4px;max-width:200px;line-height:1.35;word-break:break-word;" title="${escapeHtml(r.work_report)}">📝 ${escapeHtml(r.work_report)}</div>` : ''}
+              <td data-label="Tanggal" style="font-weight:600;">${formatDate(r.date)}</td>
+              <td data-label="Masuk">${r.clock_in || '-'}</td>
+              <td data-label="Pulang">${r.clock_out || '-'}</td>
+              <td data-label="Status">${statusBadge(r.status)}</td>
+              <td data-label="Durasi">${r.work_hours ? r.work_hours + ' jam' : '-'}</td>
+              <td data-label="Akun Selesai">
+                <span class="badge badge-primary font-bold">📦 ${accounts} Akun</span>
+              </td>
+              <td data-label="Tarif & Upah">
+                <div style="font-weight:700;color:var(--primary);">Rp${earnings.toLocaleString('id-ID')}</div>
+                <div style="font-size:11px;color:var(--text-muted);">Rp${rate}/akun</div>
+              </td>
+              <td data-label="Laporan" style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(r.work_report || r.notes || '')}">
+                ${escapeHtml(r.work_report || r.notes || '-')}
+              </td>
+              <td class="table-actions-cell" style="text-align:right;">
+                <button class="btn btn-ghost btn-sm" onclick="openCorrectionModal(${r.id})" style="color:var(--primary);font-weight:600;">
+                  Koreksi
+                </button>
               </td>
             </tr>
-          `).join('');
-        }
+          `;
+        }).join('');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function openCorrectionModal(attId) {
+      const record = logRecords.find(r => r.id === attId);
+      if (!record) return;
+
+      document.getElementById('c-att-id').value = record.id;
+      document.getElementById('c-emp-name').value = `${record.name} (${record.employee_id})`;
+      document.getElementById('c-date').value = formatDate(record.date);
+      document.getElementById('c-clock-in').value = record.clock_in || '';
+      document.getElementById('c-clock-out').value = record.clock_out || '';
+      document.getElementById('c-accounts').value = record.accounts_created || 0;
+      document.getElementById('c-rate').value = record.rate_per_account || 500;
+      document.getElementById('c-status').value = record.status || 'present';
+      document.getElementById('c-pay-status').value = record.payment_status || 'unpaid';
+      document.getElementById('c-report').value = record.work_report || record.notes || '';
+
+      refreshSelect('c-status');
+      refreshSelect('c-pay-status');
+      openModal('modal-correction');
+    }
+
+    async function handleSaveCorrection(e) {
+      e.preventDefault();
+      const attId = document.getElementById('c-att-id').value;
+      const body = {
+        clock_in: document.getElementById('c-clock-in').value,
+        clock_out: document.getElementById('c-clock-out').value,
+        accounts_created: parseInt(document.getElementById('c-accounts').value, 10) || 0,
+        rate_per_account: parseInt(document.getElementById('c-rate').value, 10) || 500,
+        status: document.getElementById('c-status').value,
+        payment_status: document.getElementById('c-pay-status').value,
+        work_report: document.getElementById('c-report').value.trim()
+      };
+
+      try {
+        await api.put(`/attendance/${attId}`, body);
+        showToast('Koreksi absensi berhasil disimpan', 'success');
+        closeModal('modal-correction');
+        loadAttendanceLogs();
+        loadMonthlyRecap();
       } catch (err) {
         showToast(err.message, 'error');
       }
-    });
+    }
 
-    document.getElementById('btn-export-report').addEventListener('click', () => {
-      exportToCSV(reportData.map(r => ({
+    function openManualAttendanceModal() {
+      openModal('modal-manual-att');
+    }
+
+    async function handleSaveManualAtt(e) {
+      e.preventDefault();
+      const userId = document.getElementById('m-user-id').value;
+      const date = document.getElementById('m-input-date').value;
+      const clockIn = document.getElementById('m-clock-in').value;
+      const clockOut = document.getElementById('m-clock-out').value;
+      const accounts = parseInt(document.getElementById('m-accounts-count').value, 10) || 0;
+      const rateVal = document.getElementById('m-rate-input').value;
+      const rate = rateVal ? parseInt(rateVal, 10) : undefined;
+      const reason = document.getElementById('m-reason').value.trim();
+
+      try {
+        await api.post('/attendance/manual', {
+          user_id: userId,
+          date,
+          clock_in: clockIn,
+          clock_out: clockOut,
+          accounts_created: accounts,
+          rate_per_account: rate,
+          work_report: reason,
+          status: 'present'
+        });
+        showToast('Presensi manual berhasil dicatat', 'success');
+        closeModal('modal-manual-att');
+        loadAttendanceLogs();
+        loadMonthlyRecap();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function exportLogsCSV() {
+      if (logRecords.length === 0) return showToast('Tidak ada data untuk diexport', 'warning');
+      exportToCSV(logRecords.map(r => ({
         ID: r.employee_id,
         Nama: r.name,
         Departemen: r.department_name || '',
@@ -215,13 +1051,17 @@
         Jam_Pulang: r.clock_out || '',
         Status: r.status,
         Jam_Kerja: r.work_hours || 0,
-        Lembur: r.overtime_hours || 0,
         Akun_Selesai: r.accounts_created || 0,
+        Tarif_Per_Akun: r.rate_per_account || 500,
+        Pendapatan_Harian: r.daily_earnings || ((r.accounts_created || 0) * (r.rate_per_account || 500)),
+        Status_Gaji: r.payment_status || 'unpaid',
         Laporan_Kerja: r.work_report || r.notes || ''
-      })), 'rekap_laporan_absensi');
-    });
+      })), 'log_presensi_detail');
+    }
 
-    init();
+    initOptions().then(() => {
+      loadMonthlyRecap();
+    });
   </script>
 </body>
 </html>

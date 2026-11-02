@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS users (
   avatar TEXT,
   telegram_chat_id TEXT,
   telegram_username TEXT,
+  salary_system TEXT DEFAULT 'per_account',
+  rate_per_account INTEGER DEFAULT 500,
+  base_salary INTEGER DEFAULT 0,
+  daily_target INTEGER DEFAULT 0,
+  target_bonus INTEGER DEFAULT 0,
+  payroll_period TEXT DEFAULT 'bulanan',
+  period_start_day INTEGER DEFAULT 1,
+  pay_date TEXT DEFAULT '25',
   is_active INTEGER DEFAULT 1,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -47,6 +55,10 @@ CREATE TABLE IF NOT EXISTS attendance (
   work_hours DOUBLE PRECISION,
   overtime_hours DOUBLE PRECISION DEFAULT 0,
   accounts_created INTEGER DEFAULT 0,
+  rate_per_account INTEGER DEFAULT 500,
+  daily_earnings INTEGER DEFAULT 0,
+  payment_status TEXT DEFAULT 'unpaid',
+  approval_status TEXT DEFAULT 'approved',
   work_report TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -125,6 +137,17 @@ CREATE TABLE IF NOT EXISTS bot_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 10. Buat Tabel Catatan Aktivitas Karyawan
+CREATE TABLE IF NOT EXISTS employee_notes (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  author_name TEXT,
+  note TEXT NOT NULL,
+  category TEXT DEFAULT 'general',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ========================================================
 -- PERIZINAN SUPABASE REST API (DISABLE RLS AGAR ANON BISA AKSES)
 -- ========================================================
@@ -136,6 +159,7 @@ ALTER TABLE leave_requests DISABLE ROW LEVEL SECURITY;
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE shifts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE employee_notes DISABLE ROW LEVEL SECURITY;
 ALTER TABLE bot_logs DISABLE ROW LEVEL SECURITY;
 
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;

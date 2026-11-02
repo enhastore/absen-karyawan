@@ -83,10 +83,22 @@ async function seed() {
     try {
       const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(emp[2]);
       if (!exists) {
-        db.prepare('INSERT INTO users (employee_id, name, email, password_hash, role, department_id, position, phone, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)').run(...emp);
+        db.prepare('INSERT INTO users (employee_id, name, email, password_hash, role, department_id, position, phone, salary_system, rate_per_account, base_salary, daily_target, target_bonus, payroll_period, period_start_day, pay_date, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "per_account", 500, 0, 25, 5000, "bulanan", 1, "25", 1)').run(...emp);
       }
     } catch(e) {}
   });
+
+  // Ensure default salary and earnings for all existing users and attendances
+  try {
+    db.prepare('UPDATE users SET salary_system = "per_account" WHERE salary_system IS NULL').run();
+    db.prepare('UPDATE users SET rate_per_account = 500 WHERE rate_per_account IS NULL OR rate_per_account = 0').run();
+    db.prepare('UPDATE attendance SET rate_per_account = 500 WHERE rate_per_account IS NULL OR rate_per_account = 0').run();
+    db.prepare('UPDATE attendance SET daily_earnings = accounts_created * rate_per_account WHERE daily_earnings IS NULL OR daily_earnings = 0').run();
+    db.prepare('UPDATE attendance SET payment_status = "unpaid" WHERE payment_status IS NULL').run();
+    db.prepare('UPDATE attendance SET approval_status = "approved" WHERE approval_status IS NULL').run();
+  } catch(e) {
+    console.warn('Salary backfill note:', e.message);
+  }
 
   // Sample tasks for Digital Products & TikTok Store
   const budi = db.prepare('SELECT id FROM users WHERE email = ?').get('budi@company.com');

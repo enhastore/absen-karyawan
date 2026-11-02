@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Kehadiran - AbsenKu</title>
+  <title>Kehadiran & Koreksi Presensi - AbsenKu</title>
   <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
@@ -18,10 +18,11 @@
           </button>
           <div class="header-title-box">
             <h1>Kehadiran</h1>
-            <div class="breadcrumb"><span>Log Presensi Karyawan</span></div>
+            <div class="breadcrumb"><span>Log Presensi Karyawan & Koreksi Darurat</span></div>
           </div>
         </div>
         <div class="header-right">
+          <button class="btn btn-primary btn-sm" onclick="openManualModal()">+ Input Presensi Manual</button>
           <button class="btn btn-ghost btn-sm" id="btn-export">Export CSV</button>
           <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
         </div>
@@ -58,18 +59,142 @@
                   <th>Jam Pulang</th>
                   <th>Status</th>
                   <th>Durasi Kerja</th>
-                  <th>Lembur</th>
                   <th>Hasil Akun</th>
+                  <th>Tarif & Upah</th>
+                  <th style="text-align:right;">Aksi</th>
                 </tr>
               </thead>
               <tbody id="attendance-tbody">
-                <tr><td colspan="8" class="text-center text-muted" style="padding:28px;">Memuat data...</td></tr>
+                <tr><td colspan="9" class="text-center text-muted" style="padding:28px;">Memuat data...</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Modal Koreksi Presensi Admin -->
+  <div class="modal-overlay" id="modal-correction">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Koreksi Presensi Karyawan</h3>
+        <button class="modal-close" onclick="closeModal('modal-correction')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-correction" onsubmit="handleSaveCorrection(event)">
+          <input type="hidden" id="c-att-id">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Nama Karyawan</label>
+              <input type="text" class="form-control readonly-highlight" id="c-emp-name" readonly>
+            </div>
+            <div class="form-group">
+              <label>Tanggal</label>
+              <input type="text" class="form-control readonly-highlight" id="c-date" readonly>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="c-clock-in">Jam Masuk (HH:MM)</label>
+              <input type="time" class="form-control" id="c-clock-in">
+            </div>
+            <div class="form-group">
+              <label for="c-clock-out">Jam Pulang (HH:MM)</label>
+              <input type="time" class="form-control" id="c-clock-out">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="c-accounts">Akun Selesai</label>
+              <input type="number" class="form-control" id="c-accounts" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="c-rate">Tarif per Akun (Rp)</label>
+              <input type="number" class="form-control" id="c-rate" min="0" required>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="c-status">Status Kehadiran</label>
+              <select class="form-control" id="c-status">
+                <option value="present">Hadir (Tepat Waktu)</option>
+                <option value="late">Terlambat</option>
+                <option value="absent">Tidak Hadir (Alfa)</option>
+                <option value="leave">Izin / Cuti</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="c-pay-status">Status Pembayaran</label>
+              <select class="form-control" id="c-pay-status">
+                <option value="unpaid">Belum dibayar</option>
+                <option value="paid">Sudah dibayar (Lunas)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="c-report">Catatan / Laporan Pekerjaan</label>
+            <textarea class="form-control" id="c-report" rows="2" placeholder="Catatan hasil pengerjaan atau alasan koreksi"></textarea>
+          </div>
+          <div class="mt-1" style="display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('modal-correction')">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan Koreksi</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Input Presensi Manual (Darurat) -->
+  <div class="modal-overlay" id="modal-manual-att">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Input Presensi Manual (Darurat)</h3>
+        <button class="modal-close" onclick="closeModal('modal-manual-att')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-manual-att" onsubmit="handleSaveManualAtt(event)">
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="m-user-id">Pilih Karyawan *</label>
+              <select class="form-control" id="m-user-id" required></select>
+            </div>
+            <div class="form-group">
+              <label for="m-input-date">Tanggal *</label>
+              <input type="date" class="form-control" id="m-input-date" required>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="m-clock-in">Jam Masuk (HH:MM)</label>
+              <input type="time" class="form-control" id="m-clock-in" value="08:00">
+            </div>
+            <div class="form-group">
+              <label for="m-clock-out">Jam Pulang (HH:MM)</label>
+              <input type="time" class="form-control" id="m-clock-out" value="17:00">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="m-accounts-count">Akun Selesai</label>
+              <input type="number" class="form-control" id="m-accounts-count" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label for="m-rate-input">Tarif per Akun (Rp)</label>
+              <input type="number" class="form-control" id="m-rate-input" min="0" placeholder="Biarkan kosong untuk gunakan tarif profil">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="m-reason">Keterangan / Laporan Pekerjaan</label>
+            <textarea class="form-control" id="m-reason" rows="2" placeholder="Catatan input manual admin"></textarea>
+          </div>
+          <div class="mt-1" style="display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('modal-manual-att')">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan Presensi</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <div id="toast-container" class="toast-container"></div>
@@ -82,12 +207,21 @@
     setupSidebar('attendance.html');
     let allAttendance = [];
     document.getElementById('filter-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('m-input-date').value = new Date().toISOString().split('T')[0];
 
     async function loadDepartments() {
       try {
-        const data = await api.get('/departments');
+        const [deptData, userData] = await Promise.all([
+          api.get('/departments'),
+          api.get('/users?role=employee&limit=100')
+        ]);
+
         document.getElementById('filter-department').innerHTML = '<option value="">Semua Departemen</option>' +
-          (data.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+          (deptData.departments || []).map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+
+        const manualSelect = document.getElementById('m-user-id');
+        manualSelect.innerHTML = (userData.users || []).map(u => `<option value="${u.id}">${u.name} (${u.employee_id})</option>`).join('');
+
         refreshSelect('filter-department');
       } catch (err) {}
     }
@@ -111,18 +245,25 @@
 
         const tbody = document.getElementById('attendance-tbody');
         if (allAttendance.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:28px;">Tidak ada catatan kehadiran pada tanggal ini</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:28px;">Tidak ada catatan kehadiran pada tanggal ini</td></tr>';
           return;
         }
 
-        tbody.innerHTML = allAttendance.map(a => `
+        tbody.innerHTML = allAttendance.map(a => {
+          const rate = a.rate_per_account || 500;
+          const accounts = a.accounts_created || 0;
+          const earnings = (a.daily_earnings !== undefined && a.daily_earnings !== null && a.daily_earnings > 0)
+            ? a.daily_earnings
+            : (accounts * rate);
+
+          return `
           <tr>
             <td>
               <div class="user-cell">
                 <div class="avatar">${getInitials(a.name)}</div>
                 <div class="user-details">
                   <div class="name">${a.name}</div>
-                  <div class="emp-id">${a.employee_id}</div>
+                  <div class="emp-id">${a.employee_id} · ${a.department_name || '-'}</div>
                 </div>
               </div>
             </td>
@@ -131,13 +272,99 @@
             <td data-label="Jam Pulang" style="font-weight:600;">${a.clock_out || '-'}</td>
             <td data-label="Status Kehadiran">${statusBadge(a.status)}</td>
             <td data-label="Durasi Kerja">${a.work_hours ? a.work_hours + ' jam' : '-'}</td>
-            <td data-label="Lembur">${a.overtime_hours > 0 ? '<span style="color:var(--warning);font-weight:600;">' + a.overtime_hours + ' jam</span>' : '-'}</td>
             <td data-label="Hasil Akun">
-              <span class="badge badge-primary" style="font-weight:600;">📦 ${a.accounts_created || 0} Akun</span>
+              <span class="badge badge-primary font-bold">📦 ${accounts} Akun</span>
               ${a.work_report ? `<div class="text-muted" style="font-size:11px;margin-top:4px;max-width:200px;line-height:1.35;word-break:break-word;" title="${escapeHtml(a.work_report)}">📝 ${escapeHtml(a.work_report)}</div>` : ''}
             </td>
+            <td data-label="Tarif & Upah">
+              <div style="font-weight:700;color:var(--primary);">Rp${earnings.toLocaleString('id-ID')}</div>
+              <div style="font-size:10.5px;color:var(--text-muted);">Rp${rate}/akun</div>
+            </td>
+            <td class="table-actions-cell" style="text-align:right;">
+              <button class="btn btn-ghost btn-sm" onclick="openCorrectionModal(${a.id})" style="color:var(--primary);font-weight:600;">
+                Koreksi
+              </button>
+            </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function openCorrectionModal(attId) {
+      const record = allAttendance.find(r => r.id === attId);
+      if (!record) return;
+
+      document.getElementById('c-att-id').value = record.id;
+      document.getElementById('c-emp-name').value = `${record.name} (${record.employee_id})`;
+      document.getElementById('c-date').value = formatDate(record.date);
+      document.getElementById('c-clock-in').value = record.clock_in || '';
+      document.getElementById('c-clock-out').value = record.clock_out || '';
+      document.getElementById('c-accounts').value = record.accounts_created || 0;
+      document.getElementById('c-rate').value = record.rate_per_account || 500;
+      document.getElementById('c-status').value = record.status || 'present';
+      document.getElementById('c-pay-status').value = record.payment_status || 'unpaid';
+      document.getElementById('c-report').value = record.work_report || record.notes || '';
+
+      refreshSelect('c-status');
+      refreshSelect('c-pay-status');
+      openModal('modal-correction');
+    }
+
+    async function handleSaveCorrection(e) {
+      e.preventDefault();
+      const attId = document.getElementById('c-att-id').value;
+      const body = {
+        clock_in: document.getElementById('c-clock-in').value,
+        clock_out: document.getElementById('c-clock-out').value,
+        accounts_created: parseInt(document.getElementById('c-accounts').value, 10) || 0,
+        rate_per_account: parseInt(document.getElementById('c-rate').value, 10) || 500,
+        status: document.getElementById('c-status').value,
+        payment_status: document.getElementById('c-pay-status').value,
+        work_report: document.getElementById('c-report').value.trim()
+      };
+
+      try {
+        await api.put(`/attendance/${attId}`, body);
+        showToast('Koreksi absensi berhasil disimpan', 'success');
+        closeModal('modal-correction');
+        loadAttendance();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function openManualModal() {
+      openModal('modal-manual-att');
+    }
+
+    async function handleSaveManualAtt(e) {
+      e.preventDefault();
+      const userId = document.getElementById('m-user-id').value;
+      const date = document.getElementById('m-input-date').value;
+      const clockIn = document.getElementById('m-clock-in').value;
+      const clockOut = document.getElementById('m-clock-out').value;
+      const accounts = parseInt(document.getElementById('m-accounts-count').value, 10) || 0;
+      const rateVal = document.getElementById('m-rate-input').value;
+      const rate = rateVal ? parseInt(rateVal, 10) : undefined;
+      const reason = document.getElementById('m-reason').value.trim();
+
+      try {
+        await api.post('/attendance/manual', {
+          user_id: userId,
+          date,
+          clock_in: clockIn,
+          clock_out: clockOut,
+          accounts_created: accounts,
+          rate_per_account: rate,
+          work_report: reason,
+          status: 'present'
+        });
+        showToast('Presensi manual berhasil dicatat', 'success');
+        closeModal('modal-manual-att');
+        loadAttendance();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -152,10 +379,12 @@
         Jam_Pulang: a.clock_out || '',
         Status: a.status,
         Jam_Kerja: a.work_hours || 0,
-        Lembur: a.overtime_hours || 0,
         Akun_Selesai: a.accounts_created || 0,
+        Tarif_Per_Akun: a.rate_per_account || 500,
+        Pendapatan_Harian: a.daily_earnings || ((a.accounts_created || 0) * (a.rate_per_account || 500)),
+        Status_Gaji: a.payment_status || 'unpaid',
         Laporan_Kerja: a.work_report || a.notes || ''
-      })), 'laporan_kehadiran');
+      })), 'laporan_kehadiran_dan_upah');
     });
 
     document.getElementById('filter-date').addEventListener('change', loadAttendance);

@@ -17,62 +17,107 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
           <div class="header-title-box">
-            <h1>Beranda</h1>
-            <div class="breadcrumb"><span>Ringkasan Aktivitas</span></div>
+            <h1>Dashboard Absensi ENHA</h1>
+            <div class="breadcrumb"><span>Monitoring Kehadiran & Upah Harian Karyawan</span></div>
           </div>
         </div>
         <div class="header-right">
-          <div class="header-search">
-            <span class="search-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </span>
-            <input type="text" placeholder="Cari karyawan..." id="global-search">
-          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadDashboard()" title="Muat Ulang Data" style="display:inline-flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <span>Segarkan</span>
+          </button>
           <button class="btn-theme-toggle" id="theme-toggle" title="Ubah Tema" onclick="toggleTheme()"></button>
         </div>
       </header>
 
       <div class="page-content">
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;font-weight:500;" id="current-date">--</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:12px;color:var(--text-muted);font-weight:500;" id="current-date">--</div>
+          <div style="font-size:11.5px;color:var(--primary);font-weight:600;display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 2s infinite;"></span>
+            <span>Status Berubah Otomatis Sesuai Aktivitas Absensi</span>
+          </div>
+        </div>
 
-        <!-- Clean Stat Cards: Minimalist, No Emoji Icons, No Box Wrappers -->
-        <div class="stats-grid">
+        <!-- 6 KPI Stat Cards: Dashboard Absensi ENHA (Sesuai Gambar 1) -->
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));margin-bottom:18px;">
           <div class="stat-card primary">
             <div class="stat-label">Total Karyawan</div>
-            <div class="stat-value" id="stat-total">-</div>
+            <div class="stat-value" id="stat-total-karyawan">0</div>
           </div>
-          <div class="stat-card success">
-            <div class="stat-label">Hadir Hari Ini</div>
-            <div class="stat-value" id="stat-present">-</div>
+          <div class="stat-card success" style="border-left: 3px solid #22c55e;">
+            <div class="stat-label">Sudah Mulai Kerja</div>
+            <div class="stat-value" id="stat-sudah-mulai">0</div>
           </div>
-          <div class="stat-card warning">
-            <div class="stat-label">Terlambat</div>
-            <div class="stat-value" id="stat-late">-</div>
+          <div class="stat-card info" style="border-left: 3px solid #3b82f6;">
+            <div class="stat-label">Sudah Selesai Kerja</div>
+            <div class="stat-value" id="stat-sudah-selesai">0</div>
           </div>
-          <div class="stat-card danger">
-            <div class="stat-label">Tidak Hadir</div>
-            <div class="stat-value" id="stat-absent">-</div>
+          <div class="stat-card warning" style="border-left: 3px solid #eab308;">
+            <div class="stat-label">Belum Mulai Kerja</div>
+            <div class="stat-value" id="stat-belum-mulai">0</div>
           </div>
-          <div class="stat-card info">
-            <div class="stat-label">Izin & Cuti</div>
-            <div class="stat-value" id="stat-leave">-</div>
+          <div class="stat-card primary" style="background:linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02));border:1px solid rgba(16,185,129,0.3);">
+            <div class="stat-label" style="color:var(--primary);font-weight:600;">Total Akun Selesai Hari Ini</div>
+            <div class="stat-value" id="stat-total-akun" style="color:var(--primary);">0</div>
+          </div>
+          <div class="stat-card primary" style="background:linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.02));border:1px solid rgba(59,130,246,0.3);">
+            <div class="stat-label" style="color:#3b82f6;font-weight:600;">Total Estimasi Upah Hari Ini</div>
+            <div class="stat-value" id="stat-total-upah" style="color:#3b82f6;font-size:20px;">Rp0</div>
+          </div>
+        </div>
+
+        <!-- Legend Status Sesuai Gambar 1 -->
+        <div class="data-card mb-2" style="padding:12px 16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Indikator Status Aktivitas Hari Ini:</div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;">
+            <span style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;" onclick="filterStatus('working')">
+              <span>🟢</span> <strong>Sedang bekerja</strong> (<span id="count-working">0</span>)
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;" onclick="filterStatus('finished')">
+              <span>🔵</span> <strong>Sudah selesai</strong> (<span id="count-finished">0</span>)
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;" onclick="filterStatus('not_started')">
+              <span>🟡</span> <strong>Belum mulai</strong> (<span id="count-not_started">0</span>)
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;" onclick="filterStatus('absent')">
+              <span>🔴</span> <strong>Tidak hadir</strong> (<span id="count-absent">0</span>)
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;" onclick="filterStatus('leave')">
+              <span>🟠</span> <strong>Izin</strong> (<span id="count-leave">0</span>)
+            </span>
+            <button class="btn btn-ghost btn-sm" onclick="filterStatus('all')" style="margin-left:auto;padding:2px 10px;font-size:11px;">Semua</button>
           </div>
         </div>
 
         <div class="grid-row">
           <div class="col-8">
             <div class="data-card">
-              <div class="data-card-header">
-                <h3>Kehadiran Hari Ini</h3>
-                <a href="attendance.html" class="btn btn-ghost btn-sm">Lihat Semua</a>
+              <div class="data-card-header" style="flex-wrap:wrap;gap:10px;">
+                <div>
+                  <h3 style="margin:0;">Status Aktivitas Seluruh Karyawan</h3>
+                  <span style="font-size:11.5px;color:var(--text-muted);">Ringkasan langsung tanpa membuka laporan satu per satu</span>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" class="form-control" id="search-emp" placeholder="Cari nama karyawan..." style="font-size:12px;padding:5px 10px;width:180px;">
+                  <a href="reports.html" class="btn btn-primary btn-sm">Rekap Bulanan</a>
+                </div>
               </div>
               <div class="data-table-wrapper">
                 <table class="data-table">
                   <thead>
-                    <tr><th>Karyawan</th><th>Masuk</th><th>Pulang</th><th>Status</th><th>Durasi</th><th>Hasil Akun</th></tr>
+                    <tr>
+                      <th>Karyawan</th>
+                      <th>Status Hari Ini</th>
+                      <th>Masuk</th>
+                      <th>Pulang</th>
+                      <th>Akun Selesai</th>
+                      <th>Tarif per Akun</th>
+                      <th>Estimasi Upah Hari Ini</th>
+                    </tr>
                   </thead>
-                  <tbody id="attendance-table-body">
-                    <tr><td colspan="6" class="text-center text-muted" style="padding:28px;">Memuat data kehadiran...</td></tr>
+                  <tbody id="employee-status-tbody">
+                    <tr><td colspan="7" class="text-center text-muted" style="padding:28px;">Memuat status karyawan...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -80,7 +125,32 @@
           </div>
 
           <div class="col-4">
-            <!-- Ringkasan Tugas (Flat list, Rule #1 compliance: no boxes inside boxes) -->
+            <!-- Tabel Ringkasan Gambar 1 (Informasi | Jumlah) -->
+            <div class="data-card">
+              <div class="data-card-header">
+                <h3>Informasi Dasbor ENHA</h3>
+              </div>
+              <div class="data-table-wrapper">
+                <table class="data-table" style="font-size:12.5px;">
+                  <thead>
+                    <tr><th>Informasi</th><th style="text-align:right;">Jumlah</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Total karyawan</td><td style="text-align:right;font-weight:700;" id="t-total">-</td></tr>
+                    <tr><td>Sudah mulai kerja</td><td style="text-align:right;font-weight:700;color:#22c55e;" id="t-mulai">-</td></tr>
+                    <tr><td>Sudah selesai kerja</td><td style="text-align:right;font-weight:700;color:#3b82f6;" id="t-selesai">-</td></tr>
+                    <tr><td>Belum mulai kerja</td><td style="text-align:right;font-weight:700;color:#eab308;" id="t-belum">-</td></tr>
+                    <tr><td>Total akun selesai hari ini</td><td style="text-align:right;font-weight:700;color:var(--primary);" id="t-akun">-</td></tr>
+                    <tr style="background:rgba(16,185,129,0.06);">
+                      <td style="font-weight:700;">Total estimasi upah hari ini</td>
+                      <td style="text-align:right;font-weight:800;color:var(--primary);font-size:13.5px;" id="t-upah">-</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Ringkasan Tugas -->
             <div class="data-card">
               <div class="data-card-header">
                 <h3>Ringkasan Tugas</h3>
@@ -105,30 +175,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Statistik Bulan Ini (Clean & Flat) -->
-            <div class="data-card">
-              <div class="data-card-header">
-                <h3>Statistik Bulan Ini</h3>
-              </div>
-              <div class="data-card-body" style="display:flex;flex-direction:column;gap:14px;">
-                <div>
-                  <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Akun Selesai Bulan Ini</div>
-                  <div style="font-family:'Outfit';font-size:24px;font-weight:700;color:var(--primary);margin-top:2px;" id="total-accounts-month">-</div>
-                  <div style="font-size:11px;color:var(--text-muted);">akun dikerjakan</div>
-                </div>
-                <div>
-                  <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Rata-rata Jam Kerja</div>
-                  <div style="font-family:'Outfit';font-size:24px;font-weight:700;color:var(--primary);margin-top:2px;" id="avg-hours">-</div>
-                  <div style="font-size:11px;color:var(--text-muted);">jam per hari</div>
-                </div>
-                <div>
-                  <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Lembur</div>
-                  <div style="font-family:'Outfit';font-size:24px;font-weight:700;color:var(--warning);margin-top:2px;" id="total-overtime">-</div>
-                  <div style="font-size:11px;color:var(--text-muted);">jam tercatat</div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -148,45 +194,107 @@
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
 
+    let dashboardEmployees = [];
+    let currentStatusFilter = 'all';
+
+    function filterStatus(status) {
+      currentStatusFilter = status;
+      renderEmployeeTable();
+    }
+
+    function renderEmployeeTable() {
+      const tbody = document.getElementById('employee-status-tbody');
+      const search = (document.getElementById('search-emp')?.value || '').toLowerCase().trim();
+
+      let filtered = dashboardEmployees;
+      if (currentStatusFilter !== 'all') {
+        filtered = filtered.filter(e => e.status === currentStatusFilter);
+      }
+      if (search) {
+        filtered = filtered.filter(e =>
+          (e.name || '').toLowerCase().includes(search) ||
+          (e.employee_id || '').toLowerCase().includes(search) ||
+          (e.department_name || '').toLowerCase().includes(search)
+        );
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:24px;">Tidak ada karyawan yang sesuai filter</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(e => {
+        let badgeClass = 'badge-muted';
+        if (e.status === 'working') badgeClass = 'badge-success';
+        else if (e.status === 'finished') badgeClass = 'badge-info';
+        else if (e.status === 'not_started') badgeClass = 'badge-warning';
+        else if (e.status === 'absent') badgeClass = 'badge-high';
+        else if (e.status === 'leave') badgeClass = 'badge-medium';
+
+        return `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar">${getInitials(e.name)}</div>
+                <div class="user-details">
+                  <div class="name">${e.name}</div>
+                  <div class="emp-id">${e.employee_id || '-'} · ${e.department_name || e.position || '-'}</div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Status Hari Ini">
+              <span class="badge ${badgeClass}" style="display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:12px;">
+                <span>${e.status_dot}</span>
+                <span>${e.status_label}</span>
+              </span>
+            </td>
+            <td data-label="Jam Masuk" style="font-weight:600;">${e.clock_in}</td>
+            <td data-label="Jam Pulang" style="font-weight:600;">${e.clock_out}</td>
+            <td data-label="Akun Selesai">
+              ${e.accounts_created > 0 ? `<span class="badge badge-primary font-bold">📦 ${e.accounts_created} Akun</span>` : '<span class="text-muted">0</span>'}
+            </td>
+            <td data-label="Tarif per Akun">Rp${Number(e.rate_per_account || 500).toLocaleString('id-ID')}</td>
+            <td data-label="Estimasi Upah Hari Ini" style="font-weight:700;color:var(--primary);">
+              Rp${Number(e.daily_earnings || 0).toLocaleString('id-ID')}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
     async function loadDashboard() {
       try {
-        const summary = await api.get('/attendance/summary');
-        document.getElementById('stat-total').textContent = summary.today.total_employees;
-        document.getElementById('stat-present').textContent = summary.today.present;
-        document.getElementById('stat-late').textContent = summary.today.late;
-        document.getElementById('stat-absent').textContent = summary.today.absent;
-        document.getElementById('stat-leave').textContent = summary.today.leave;
-        document.getElementById('avg-hours').textContent = summary.this_month.avg_work_hours || '0';
-        document.getElementById('total-overtime').textContent = summary.this_month.total_overtime || '0';
-        const monthAcc = document.getElementById('total-accounts-month');
-        if (monthAcc) monthAcc.textContent = summary.this_month.total_accounts || '0';
+        const data = await api.get('/attendance/summary');
+        const db = data.dashboard || {};
 
-        const today = new Date().toISOString().split('T')[0];
-        const attendance = await api.get(`/attendance/all?date=${today}&limit=10`);
-        const tbody = document.getElementById('attendance-table-body');
-        if (!attendance.attendance || attendance.attendance.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:28px;">Belum ada catatan kehadiran hari ini</td></tr>';
-        } else {
-          tbody.innerHTML = attendance.attendance.map(a => `
-            <tr>
-              <td>
-                <div class="user-cell">
-                  <div class="avatar">${getInitials(a.name)}</div>
-                  <div class="user-details">
-                    <div class="name">${a.name}</div>
-                    <div class="emp-id">${a.employee_id}</div>
-                  </div>
-                </div>
-              </td>
-              <td data-label="Jam Masuk" style="font-weight:600;">${a.clock_in || '-'}</td>
-              <td data-label="Jam Pulang" style="font-weight:600;">${a.clock_out || '-'}</td>
-              <td data-label="Status Kehadiran">${statusBadge(a.status)}</td>
-              <td data-label="Durasi Kerja">${a.work_hours ? a.work_hours + ' jam' : '-'}</td>
-              <td data-label="Hasil Akun"><span class="badge badge-primary font-bold">📦 ${a.accounts_created || 0} Akun</span></td>
-            </tr>
-          `).join('');
-        }
+        // 1. KPI Stats Cards (Gambar 1)
+        document.getElementById('stat-total-karyawan').textContent = db.total_karyawan || 0;
+        document.getElementById('stat-sudah-mulai').textContent = db.sudah_mulai_kerja || 0;
+        document.getElementById('stat-sudah-selesai').textContent = db.sudah_selesai_kerja || 0;
+        document.getElementById('stat-belum-mulai').textContent = db.belum_mulai_kerja || 0;
+        document.getElementById('stat-total-akun').textContent = db.total_akun_selesai_hari_ini || 0;
+        document.getElementById('stat-total-upah').textContent = 'Rp' + Number(db.total_estimasi_upah_hari_ini || 0).toLocaleString('id-ID');
 
+        // 2. Tabel Ringkasan Gambar 1 (Informasi | Jumlah)
+        document.getElementById('t-total').textContent = db.total_karyawan || 0;
+        document.getElementById('t-mulai').textContent = db.sudah_mulai_kerja || 0;
+        document.getElementById('t-selesai').textContent = db.sudah_selesai_kerja || 0;
+        document.getElementById('t-belum').textContent = db.belum_mulai_kerja || 0;
+        document.getElementById('t-akun').textContent = db.total_akun_selesai_hari_ini || 0;
+        document.getElementById('t-upah').textContent = 'Rp' + Number(db.total_estimasi_upah_hari_ini || 0).toLocaleString('id-ID');
+
+        // 3. Status Legend Counts
+        document.getElementById('count-working').textContent = db.sedang_bekerja || 0;
+        document.getElementById('count-finished').textContent = db.sudah_selesai_kerja || 0;
+        document.getElementById('count-not_started').textContent = db.belum_mulai_kerja || 0;
+        document.getElementById('count-absent').textContent = db.tidak_hadir || 0;
+        document.getElementById('count-leave').textContent = db.izin || 0;
+
+        // 4. Employee List
+        dashboardEmployees = data.employees || [];
+        renderEmployeeTable();
+
+        // 5. Tasks Summary
         const tasks = await api.get('/tasks/summary');
         document.getElementById('task-todo').textContent = tasks.todo;
         document.getElementById('task-progress').textContent = tasks.in_progress;
@@ -197,7 +305,11 @@
       }
     }
 
+    document.getElementById('search-emp')?.addEventListener('input', debounce(renderEmployeeTable, 200));
+
     loadDashboard();
+    // Auto-refresh every 30 seconds
+    setInterval(loadDashboard, 30000);
   </script>
 </body>
 </html>
