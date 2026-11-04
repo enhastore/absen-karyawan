@@ -91,7 +91,7 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), (req, res) 
           accounts_created=?, rate_per_account=?, daily_earnings=?, 
           work_report=?, notes=? 
       WHERE id=?
-    `).run(currentTime, photo, workHours, overtimeHours, accountsCount, ratePerAccount, dailyEarnings, reportNotes, notes || reportNotes || null, existing.id);
+    `).run(currentTime, photo, workHours, overtimeHours, accountsCount, ratePerAccount, dailyEarnings, reportNotes, notes || existing.notes || null, existing.id);
 
     res.json({
       message: `Presensi pulang & laporan (${accountsCount} akun) berhasil dicatat! Pendapatan sementara hari ini: Rp${dailyEarnings.toLocaleString('id-ID')}`,
@@ -134,11 +134,24 @@ router.get('/today', authenticateToken, (req, res) => {
       userName = user.name;
     }
 
+    // Ambil catatan khusus/memo terbaru dari admin untuk karyawan ini
+    let adminNotes = [];
+    try {
+      adminNotes = dbHelper.prepare(`
+        SELECT id, note, category, author_name, created_at
+        FROM employee_notes
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 5
+      `).all(req.user.id);
+    } catch (e) {}
+
     res.json({
       attendance: attendance || null,
       user_rate: userRate,
       user_name: userName,
-      user_target: user ? user.daily_target : 0
+      user_target: user ? user.daily_target : 0,
+      admin_notes: adminNotes
     });
   } catch (err) {
     res.status(500).json({ error: 'Terjadi kesalahan server.' });

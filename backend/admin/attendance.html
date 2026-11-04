@@ -268,7 +268,10 @@
               </div>
             </td>
             <td data-label="Tanggal">${formatDate(a.date)}</td>
-            <td data-label="Jam Masuk" style="font-weight:600;">${a.clock_in || '-'}</td>
+            <td data-label="Jam Masuk" style="font-weight:600;">
+              ${a.clock_in || '-'}
+              ${a.notes ? `<div class="text-muted" style="font-size:10.5px;margin-top:2px;font-weight:normal;max-width:140px;line-height:1.25;" title="Catatan masuk: ${escapeHtml(a.notes)}">💬 ${escapeHtml(a.notes)}</div>` : ''}
+            </td>
             <td data-label="Jam Pulang" style="font-weight:600;">${a.clock_out || '-'}</td>
             <td data-label="Status Kehadiran">${statusBadge(a.status)}</td>
             <td data-label="Durasi Kerja">${a.work_hours ? a.work_hours + ' jam' : '-'}</td>

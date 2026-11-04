@@ -181,10 +181,13 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
   }
 });
 
-// GET /api/users/:id/activities (Catatan khusus & log aktivitas hanya untuk 1 karyawan terpilih)
-router.get('/:id/activities', authenticateToken, requireAdmin, (req, res) => {
+// GET /api/users/:id/activities (Catatan khusus & log aktivitas untuk karyawan terpilih atau diri sendiri)
+router.get('/:id/activities', authenticateToken, (req, res) => {
   try {
-    const userId = parseInt(req.params.id, 10);
+    const userId = (req.params.id === 'me') ? req.user.id : parseInt(req.params.id, 10);
+    if (req.user.role !== 'admin' && req.user.id !== userId) {
+      return res.status(403).json({ error: 'Akses ditolak.' });
+    }
     const employee = dbHelper.prepare(`
       SELECT u.id, u.employee_id, u.name, u.email, u.phone, u.avatar, u.position,
              u.salary_system, u.rate_per_account, u.base_salary, u.daily_target, u.target_bonus,

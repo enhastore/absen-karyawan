@@ -39,6 +39,10 @@
       <div class="clock-date" id="display-date">--</div>
       <div class="clock-time" id="display-time">--:--:--</div>
       <div class="clock-status" id="clock-status">Memeriksa status kehadiran...</div>
+      
+      <!-- Pengumuman / Catatan Khusus dari Admin saat Masuk Kerja -->
+      <div id="emp-admin-notes-banner" style="display:none;margin-top:14px;width:100%;max-width:440px;"></div>
+
       <div class="clock-buttons">
         <button class="clock-btn clock-btn-in" id="btn-clock-in" onclick="clockIn()">
           Catat Kehadiran
@@ -54,6 +58,10 @@
     <nav class="tab-nav">
       <button class="tab-btn active" onclick="switchTab('tasks', this)">Tugas Saya</button>
       <button class="tab-btn" onclick="switchTab('history', this)">Riwayat Hadir</button>
+      <button class="tab-btn" id="btn-tab-notes" onclick="switchTab('notes', this)">
+        <span>Catatan Khusus</span>
+        <span id="tab-notes-count" class="badge badge-primary" style="display:none;font-size:10px;padding:1px 6px;margin-left:4px;">0</span>
+      </button>
       <button class="tab-btn" onclick="switchTab('leave', this)">Izin & Cuti</button>
     </nav>
 
@@ -66,6 +74,25 @@
     <div class="tab-content" id="tab-history">
       <div class="data-card">
         <div id="history-list"></div>
+      </div>
+    </div>
+
+    <!-- Tab Catatan Khusus & Memo dari Admin (PO List Style Karyawan) -->
+    <div class="tab-content" id="tab-notes">
+      <div class="data-card mb-2" style="border-left:4px solid var(--primary);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h3 style="margin:0;font-size:15px;font-weight:700;">📌 Catatan Khusus & Memo Aktivitas</h3>
+            <p style="margin:3px 0 0 0;font-size:12px;color:var(--text-muted);">Instruksi khusus, target, dan memo aktivitas yang diberikan oleh Admin untuk Anda.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadMyActivitiesAndNotes()" style="font-size:12px;">↻ Segarkan</button>
+        </div>
+      </div>
+
+      <div class="data-card">
+        <div id="emp-notes-list">
+          <!-- Dynamic notes -->
+        </div>
       </div>
     </div>
 
@@ -286,6 +313,69 @@
   </aside>
 
   <!-- ============================================== -->
+  <!-- MODAL: PRESENSI MASUK KERJA & CATATAN MASUK    -->
+  <!-- ============================================== -->
+  <div class="confirm-dialog-overlay" id="modal-clock-in">
+    <div class="confirm-dialog-card work-report-modal-card" role="dialog" aria-modal="true" style="max-width:440px;">
+      <div class="confirm-dialog-header" style="align-items: flex-start; justify-content: space-between;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(16,185,129,0.15);color:var(--success);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="confirm-dialog-title" style="font-size:16px;font-weight:700;margin:0;">Presensi Masuk & Catatan</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin:3px 0 0 0;line-height:1.4;" id="in-modal-time-desc">Catat jam masuk kerja dan sertakan catatan masuk jika ada.</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="closeClockInModal()" title="Batal" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 6px;line-height:1;">✕</button>
+      </div>
+
+      <!-- Notice Catatan Khusus dari Admin (Jika Ada) -->
+      <div id="in-modal-admin-note" style="display:none;margin-top:14px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:11px;font-size:12px;color:var(--text-primary);line-height:1.4;">
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <span style="font-size:15px;">📢</span>
+          <div>
+            <strong style="color:var(--primary);">Catatan Khusus dari Admin:</strong>
+            <div id="in-modal-admin-note-text" style="margin-top:2px;color:var(--text-secondary);font-size:12px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <form id="form-clock-in" onsubmit="handleClockInSubmit(event)" style="margin-top:16px;">
+        <!-- Input Catatan Masuk Kerja -->
+        <div class="form-group" style="margin-bottom:14px;">
+          <label for="in-attendance-notes" style="font-weight:600;font-size:13px;display:block;margin-bottom:6px;">
+            Catatan Masuk Kerja <span style="font-size:11px;font-weight:400;color:var(--text-muted);">(Opsional)</span>
+          </label>
+          <textarea id="in-attendance-notes" class="form-control" rows="3" placeholder="Tuliskan catatan masuk kerja, target akun hari ini, shift, atau kendala (opsional)..." style="resize:vertical;font-size:12.5px;line-height:1.45;"></textarea>
+          
+          <!-- Quick Preset Chips Masuk Kerja -->
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;color:var(--text-muted);margin-right:2px;">Cepat:</span>
+            <button type="button" class="chip-preset" onclick="setInNotePreset('Siap kerja target selesai')">Siap kerja</button>
+            <button type="button" class="chip-preset" onclick="setInNotePreset('Shift Pagi')">Shift Pagi</button>
+            <button type="button" class="chip-preset" onclick="setInNotePreset('Shift Siang / Malam')">Shift Siang</button>
+            <button type="button" class="chip-preset" onclick="setInNotePreset('Kondisi sehat & lancar')">Sehat & Lancar</button>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi -->
+        <div class="confirm-dialog-actions" style="border-top:1px solid var(--border);padding-top:14px;">
+          <button type="button" class="btn btn-ghost" onclick="closeClockInModal()">Batal</button>
+          <button type="submit" class="btn btn-success" id="btn-submit-clock-in" style="display:flex;align-items:center;gap:6px;font-weight:600;background:var(--success);border-color:var(--success);color:#fff;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Masuk & Mulai Kerja</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
   <!-- MODAL: LAPORAN HASIL KERJA & PRESENSI PULANG   -->
   <!-- ============================================== -->
   <div class="confirm-dialog-overlay" id="modal-clock-out">
@@ -478,13 +568,54 @@
         const btnOut = document.getElementById('btn-clock-out');
         const status = document.getElementById('clock-status');
         const reportContainer = document.getElementById('today-report-container');
+        const adminBanner = document.getElementById('emp-admin-notes-banner');
+        const notesBadge = document.getElementById('tab-notes-count');
+
+        // Simpan referensi catatan admin
+        window.currentAdminNotes = data.admin_notes || [];
+
+        // Update badge jumlah catatan admin
+        if (notesBadge) {
+          if (window.currentAdminNotes.length > 0) {
+            notesBadge.textContent = window.currentAdminNotes.length;
+            notesBadge.style.display = 'inline-block';
+          } else {
+            notesBadge.style.display = 'none';
+          }
+        }
+
+        // Tampilkan Banner Catatan Khusus dari Admin (Jika ada catatan aktif)
+        if (adminBanner) {
+          if (window.currentAdminNotes.length > 0) {
+            const latest = window.currentAdminNotes[0];
+            adminBanner.style.display = 'block';
+            adminBanner.innerHTML = `
+              <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3);border-radius:12px;padding:12px 14px;text-align:left;position:relative;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:8px;">
+                  <span style="font-size:12px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px;">
+                    📢 Catatan Khusus dari ${escapeHtml(latest.author_name || 'Admin')}
+                  </span>
+                  <span style="font-size:10.5px;color:var(--text-muted);">${formatDate(latest.created_at)}</span>
+                </div>
+                <div style="font-size:12.5px;font-weight:500;color:var(--text-primary);line-height:1.45;white-space:pre-wrap;">
+                  ${escapeHtml(latest.note)}
+                </div>
+              </div>
+            `;
+          } else {
+            adminBanner.style.display = 'none';
+          }
+        }
 
         if (data.attendance) {
           const a = data.attendance;
           if (a.clock_in && !a.clock_out) {
             btnIn.disabled = true;
             btnOut.disabled = false;
-            status.innerHTML = `<span style="color:var(--success);font-weight:600;">Sedang Bekerja (Masuk pukul ${a.clock_in})</span> · ${statusBadge(a.status)}`;
+            status.innerHTML = `
+              <div style="color:var(--success);font-weight:600;font-size:13.5px;">🟢 Sedang Bekerja (Masuk pukul ${a.clock_in}) · ${statusBadge(a.status)}</div>
+              ${a.notes ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">💬 Catatan Masuk: <strong>"${escapeHtml(a.notes)}"</strong></div>` : ''}
+            `;
             if (reportContainer) reportContainer.style.display = 'none';
           } else if (a.clock_in && a.clock_out) {
             btnIn.disabled = true;
@@ -500,6 +631,7 @@
               <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
                 Masuk ${a.clock_in} · Pulang ${a.clock_out} · ${a.work_hours || 0} jam kerja
               </div>
+              ${a.notes ? `<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">💬 Masuk: <em>"${escapeHtml(a.notes)}"</em></div>` : ''}
             `;
 
             if (reportContainer) {
@@ -529,7 +661,8 @@
                 accounts_created: accounts,
                 rate_per_account: rate,
                 daily_earnings: earnings,
-                work_report: a.work_report
+                work_report: a.work_report,
+                notes: a.notes
               };
             }
           }
@@ -550,17 +683,86 @@
       }
     }
 
-    async function clockIn() {
-      const btn = document.getElementById('btn-clock-in');
-      btn.disabled = true;
-      try {
-        const data = await api.post('/attendance/clock-in', {});
-        showToast(data.message, 'success');
-        checkToday();
-      } catch (err) {
-        showToast(err.message, 'error');
-        btn.disabled = false;
+    // Modal & Clock In Handlers (Catatan Masuk Kerja)
+    function clockIn() {
+      openClockInModal();
+    }
+
+    function openClockInModal() {
+      const modal = document.getElementById('modal-clock-in');
+      if (!modal) return;
+      document.getElementById('in-attendance-notes').value = '';
+
+      // Tampilkan waktu saat ini di modal
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+      const timeDesc = document.getElementById('in-modal-time-desc');
+      if (timeDesc) {
+        timeDesc.innerHTML = `Waktu masuk: <strong>${timeStr} WIB</strong> · Anda dapat mengisi catatan masuk/rencana kerja hari ini jika ada.`;
       }
+
+      // Tampilkan catatan khusus admin terbaru jika ada
+      const adminNoteBox = document.getElementById('in-modal-admin-note');
+      const adminNoteText = document.getElementById('in-modal-admin-note-text');
+      if (window.currentAdminNotes && window.currentAdminNotes.length > 0) {
+        adminNoteBox.style.display = 'block';
+        const n = window.currentAdminNotes[0];
+        adminNoteText.textContent = `"${n.note}" (${n.author_name || 'Admin'})`;
+      } else {
+        adminNoteBox.style.display = 'none';
+      }
+
+      modal.classList.add('active');
+      setTimeout(() => {
+        const input = document.getElementById('in-attendance-notes');
+        if (input) input.focus();
+      }, 100);
+    }
+
+    function closeClockInModal() {
+      const modal = document.getElementById('modal-clock-in');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function setInNotePreset(text) {
+      const input = document.getElementById('in-attendance-notes');
+      if (!input) return;
+      if (!input.value.trim()) input.value = text;
+      else input.value = input.value.trim() + ' · ' + text;
+    }
+
+    async function handleClockInSubmit(e) {
+      e.preventDefault();
+      const notesInput = document.getElementById('in-attendance-notes');
+      const submitBtn = document.getElementById('btn-submit-clock-in');
+      const notes = notesInput ? notesInput.value.trim() : '';
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Menyimpan...</span>';
+
+      try {
+        const data = await api.post('/attendance/clock-in', { notes });
+        showToast(data.message || 'Presensi masuk berhasil dicatat!', 'success');
+        closeClockInModal();
+        checkToday();
+        loadHistory();
+      } catch (err) {
+        showToast(err.message || 'Gagal mencatat kehadiran', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Masuk & Mulai Kerja</span>
+        `;
+      }
+    }
+
+    // Close modal on backdrop click or Escape
+    const clockInModalEl = document.getElementById('modal-clock-in');
+    if (clockInModalEl) {
+      clockInModalEl.addEventListener('click', (e) => {
+        if (e.target === clockInModalEl) closeClockInModal();
+      });
     }
 
     // Modal & Clock Out Handlers
@@ -712,7 +914,66 @@
 
       if (tab === 'tasks') loadMyTasks();
       if (tab === 'history') loadHistory();
+      if (tab === 'notes') loadMyActivitiesAndNotes();
       if (tab === 'leave') loadMyLeaves();
+    }
+
+    async function loadMyActivitiesAndNotes() {
+      const container = document.getElementById('emp-notes-list');
+      if (!container) return;
+      container.innerHTML = '<div class="text-center text-muted" style="padding:24px;">Memuat catatan khusus...</div>';
+
+      try {
+        const res = await api.get('/users/me/activities');
+        const notes = res.admin_notes || [];
+        
+        // Update badge count
+        const badge = document.getElementById('tab-notes-count');
+        if (badge) {
+          if (notes.length > 0) {
+            badge.textContent = notes.length;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+
+        if (notes.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state" style="padding:28px 16px;">
+              <div style="font-size:32px;margin-bottom:8px;">📝</div>
+              <h3 style="font-size:15px;margin-bottom:4px;">Belum Ada Catatan Khusus</h3>
+              <p style="font-size:12px;color:var(--text-muted);max-width:320px;margin:0 auto;">
+                Catatan khusus, instruksi harian, atau target dari Admin untuk Anda akan muncul di sini.
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            ${notes.map(n => `
+              <div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:10px;padding:12px 14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;">
+                  <span class="badge badge-primary" style="font-size:11px;padding:2px 8px;font-weight:600;">
+                    📌 ${escapeHtml(n.category || 'Catatan')}
+                  </span>
+                  <span style="font-size:11px;color:var(--text-muted);">${formatDate(n.created_at)}</span>
+                </div>
+                <div style="font-size:13px;line-height:1.5;color:var(--text-primary);white-space:pre-wrap;font-weight:500;">
+                  ${escapeHtml(n.note)}
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:4px;">
+                  <span>Oleh: <strong>${escapeHtml(n.author_name || 'Admin')}</strong></span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<div class="text-center text-muted" style="padding:24px;">Gagal memuat catatan: ${escapeHtml(err.message)}</div>`;
+      }
     }
 
     async function loadMyTasks() {
@@ -793,8 +1054,11 @@
             ? `<span class="badge badge-primary" style="font-size:11px;padding:2px 8px;font-weight:600;">📦 ${accounts} Akun</span>
                <span class="badge badge-success" style="font-size:11px;padding:2px 8px;font-weight:600;">💰 Rp${earnings.toLocaleString('id-ID')}</span>`
             : '';
+          const inNotesSnippet = a.notes
+            ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.35;word-break:break-word;">💬 <strong style="color:var(--text-secondary);">Masuk:</strong> ${escapeHtml(a.notes)}</div>`
+            : '';
           const reportSnippet = a.work_report
-            ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.35;word-break:break-word;">📝 ${escapeHtml(a.work_report)}</div>`
+            ? `<div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.35;word-break:break-word;">📝 <strong style="color:var(--text-secondary);">Pulang:</strong> ${escapeHtml(a.work_report)}</div>`
             : '';
           return `
             <div class="history-item">
@@ -804,6 +1068,7 @@
                   ${accountsBadge}
                 </div>
                 <div class="history-detail">Masuk: ${a.clock_in || '-'} · Pulang: ${a.clock_out || '-'} ${a.work_hours ? `· ${a.work_hours} jam` : ''} · Tarif: Rp${rate.toLocaleString('id-ID')}/akun</div>
+                ${inNotesSnippet}
                 ${reportSnippet}
               </div>
               <div style="margin-left:10px;flex-shrink:0;">${statusBadge(a.status)}</div>
