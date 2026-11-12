@@ -2,13 +2,13 @@ const bcrypt = require('bcryptjs');
 const { dbHelper } = require('./database');
 
 async function seed() {
-  console.log('🌱 Seeding database for Digital Products & TikTok Accounts Business...\n');
+  console.log('🌱 Seeding database with official departments and employees...\n');
 
   const db = dbHelper;
 
-  // Default Settings for Digital Goods & TikTok Store
+  // 1. Default Company Settings
   const settings = [
-    { key: 'company_name', value: 'DigiStore - Produk Digital & Akun TikTok', description: 'Nama usaha / toko digital' },
+    { key: 'company_name', value: 'ENHA STORE - Ternak Akun & TikTok Affiliate', description: 'Nama usaha / operasional toko digital' },
     { key: 'work_start', value: '08:00', description: 'Jam mulai kerja' },
     { key: 'work_end', value: '17:00', description: 'Jam selesai kerja' },
     { key: 'late_tolerance', value: '15', description: 'Toleransi keterlambatan (menit)' },
@@ -21,14 +21,14 @@ async function seed() {
       if (!existing) {
         db.prepare('INSERT INTO settings (key, value, description) VALUES (?, ?, ?)').run(s.key, s.value, s.description);
       }
-    } catch(e) {}
+    } catch (e) {}
   });
 
-  // Default Shifts
+  // 2. Default Shifts
   const shifts = [
-    ['Regular (Office & CS)', '08:00', '17:00', 15, 1],
-    ['Shift Siang (Content Creator)', '11:00', '19:00', 15, 0],
-    ['Shift Sore / Malam (Live Host TikTok)', '15:00', '23:00', 15, 0],
+    ['Shift Pagi (Regular)', '08:00', '17:00', 15, 1],
+    ['Shift Siang', '11:00', '19:00', 15, 0],
+    ['Shift Sore / Malam', '15:00', '23:00', 15, 0],
   ];
   shifts.forEach(s => {
     try {
@@ -36,56 +36,267 @@ async function seed() {
       if (!exists) {
         db.prepare('INSERT INTO shifts (name, start_time, end_time, late_tolerance, is_default) VALUES (?, ?, ?, ?, ?)').run(...s);
       }
-    } catch(e) {}
+    } catch (e) {}
   });
 
-  // Departments for Digital Products & TikTok Business
-  const depts = [
-    ['CS & Order', 'Layanan chat customer, transaksi order produk digital & akun TikTok'],
-    ['Konten & TikTok Creator', 'Produksi konten TikTok, riset video FYP, & template kreatif'],
-    ['Fulfillment & Akun Digital', 'QC akun TikTok, serah terima data login, kirim link/file produk digital'],
-    ['Host Live Streaming', 'Live streaming TikTok jualan akun & etalase produk digital'],
-    ['Digital Ads & Traffic', 'Pengelolaan iklan TikTok Ads, Meta Ads & traffic katalog produk'],
+  // 3. Official Departments (Sesuai Gambar 1)
+  const officialDepts = [
+    {
+      id: 1,
+      name: 'Manage Account',
+      description: 'Pengelolaan dan pemeliharaan akun TikTok secara berkala untuk mempersiapkan akun agar memenuhi persyaratan aktivasi TikTok Shop Affiliate.'
+    },
+    {
+      id: 2,
+      name: 'Creating Multiple Accounts',
+      description: 'Membuat dan menyiapkan akun TikTok dalam jumlah banyak setiap harinya sesuai target produksi yang telah ditentukan.'
+    },
+    {
+      id: 3,
+      name: 'Video Production',
+      description: 'Memproduksi dan merekam video sebagai bahan konten untuk kebutuhan operasional ternak TikTok.'
+    }
   ];
-  depts.forEach(d => {
+
+  officialDepts.forEach(d => {
     try {
-      const exists = db.prepare('SELECT id FROM departments WHERE name = ?').get(d[0]);
-      if (!exists) {
-        db.prepare('INSERT INTO departments (name, description) VALUES (?, ?)').run(...d);
+      const exists = db.prepare('SELECT id FROM departments WHERE id = ? OR name = ?').get(d.id, d.name);
+      if (exists) {
+        db.prepare('UPDATE departments SET name = ?, description = ? WHERE id = ?').run(d.name, d.description, exists.id);
+      } else {
+        db.prepare('INSERT INTO departments (id, name, description) VALUES (?, ?, ?)').run(d.id, d.name, d.description);
       }
-    } catch(e) {}
+    } catch (e) {
+      console.warn('Dept insert note:', e.message);
+    }
   });
 
-  // Admin User
+  // 4. Admin User (admin@company.com / admin123)
   const adminPassword = bcrypt.hashSync('admin123', 10);
   try {
-    const adminExists = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@company.com');
+    const adminExists = db.prepare('SELECT id FROM users WHERE email = ? OR role = "admin"').get('admin@company.com');
     if (!adminExists) {
-      db.prepare('INSERT INTO users (employee_id, name, email, password_hash, role, department_id, position, phone, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)')
-        .run('ADM001', 'Administrator', 'admin@company.com', adminPassword, 'admin', null, 'Owner / Head of Digital Store', '081234567890');
+      db.prepare(`
+        INSERT INTO users (employee_id, name, email, password_hash, role, department_id, position, phone, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+      `).run('ADM001', 'Administrator', 'admin@company.com', adminPassword, 'admin', null, 'Owner / Management ENHA', '081234567890');
     }
-  } catch(e) {}
+  } catch (e) {}
 
-  // Employees for Digital Products & TikTok Store
-  const empPassword = bcrypt.hashSync('karyawan123', 10);
-  const deptMap = {};
-  db.prepare('SELECT id, name FROM departments').all().forEach(d => { deptMap[d.name] = d.id; });
+  // 5. Official Employee Accounts (Sesuai Gambar 2, 3, 4)
+  const employeesData = [
+    // --- DEPARTEMEN 1: Manage Account ---
+    {
+      emp_id: 'EMP001',
+      name: 'Naila',
+      email: 'naila@company.com',
+      raw_password: 'ehsnai06@',
+      dept_id: 1,
+      position: 'Staff Manage Account TikTok',
+      phone: '081234567801',
+      salary_system: 'per_account',
+      rate: 500,
+      base_salary: 0,
+      daily_target: 10,
+      bonus: 0,
+      period_start: 1,
+      pay_date: '25'
+    },
+    {
+      emp_id: 'EMP002',
+      name: 'Salwa',
+      email: 'salwa@company.com',
+      raw_password: 'ehssal06@',
+      dept_id: 1,
+      position: 'Staff Manage Account TikTok',
+      phone: '081234567802',
+      salary_system: 'per_account',
+      rate: 500,
+      base_salary: 0,
+      daily_target: 10,
+      bonus: 0,
+      period_start: 1,
+      pay_date: '25'
+    },
+    {
+      emp_id: 'EMP003',
+      name: 'Lulu',
+      email: 'lulu@company.com',
+      raw_password: 'ehslu06@',
+      dept_id: 1,
+      position: 'Staff Manage Account TikTok',
+      phone: '081234567803',
+      salary_system: 'per_account',
+      rate: 500,
+      base_salary: 0,
+      daily_target: 10,
+      bonus: 0,
+      period_start: 1,
+      pay_date: '25'
+    },
+    {
+      emp_id: 'EMP004',
+      name: 'uzank',
+      email: 'uzank@company.com',
+      raw_password: 'ehszank06@',
+      dept_id: 1,
+      position: 'Staff Manage Account TikTok',
+      phone: '081234567804',
+      salary_system: 'per_account',
+      rate: 500,
+      base_salary: 0,
+      daily_target: 10,
+      bonus: 0,
+      period_start: 1,
+      pay_date: '25'
+    },
 
-  const employees = [
-    ['EMP001', 'Budi Santoso', 'budi@company.com', empPassword, 'employee', deptMap['CS & Order'] || 1, 'CS & Admin Order TikTok', '081234567891'],
-    ['EMP002', 'Siti Rahayu', 'siti@company.com', empPassword, 'employee', deptMap['Konten & TikTok Creator'] || 2, 'TikTok Creator & Video Editor', '081234567892'],
-    ['EMP003', 'Ahmad Fauzi', 'ahmad@company.com', empPassword, 'employee', deptMap['Fulfillment & Akun Digital'] || 3, 'Staff QC & Serah Terima Akun TikTok', '081234567893'],
-    ['EMP004', 'Dewi Lestari', 'dewi@company.com', empPassword, 'employee', deptMap['Host Live Streaming'] || 4, 'Host Live Streaming TikTok Shop', '081234567894'],
-    ['EMP005', 'Rizky Pratama', 'rizky@company.com', empPassword, 'employee', deptMap['Digital Ads & Traffic'] || 5, 'TikTok Ads & Traffic Specialist', '081234567895'],
+    // --- DEPARTEMEN 2: Creating Multiple Accounts ---
+    {
+      emp_id: 'EMP005',
+      name: 'Ilyas',
+      email: 'ilyas@company.com',
+      raw_password: 'ehsyas06@',
+      dept_id: 2,
+      position: 'Staff Creating Multiple Accounts',
+      phone: '081234567805',
+      salary_system: 'per_account',
+      rate: 4000,
+      base_salary: 1200000,
+      daily_target: 10,
+      bonus: 0,
+      period_start: 4,
+      pay_date: '4'
+    },
+    {
+      emp_id: 'EMP006',
+      name: 'Silvi',
+      email: 'silvi@company.com',
+      raw_password: 'ehsvia06@',
+      dept_id: 2,
+      position: 'Staff Creating Multiple Accounts',
+      phone: '081234567806',
+      salary_system: 'per_account',
+      rate: 4200,
+      base_salary: 1200000,
+      daily_target: 10,
+      bonus: 0,
+      period_start: 12,
+      pay_date: '25'
+    },
+    {
+      emp_id: 'EMP007',
+      name: 'Nana',
+      email: 'nana@company.com',
+      raw_password: 'ehsna06@',
+      dept_id: 2,
+      position: 'Staff Creating Multiple Accounts',
+      phone: '081234567807',
+      salary_system: 'per_account',
+      rate: 4600,
+      base_salary: 600000,
+      daily_target: 5,
+      bonus: 0,
+      period_start: 12,
+      pay_date: '12'
+    },
+    {
+      emp_id: 'EMP008',
+      name: 'Arum',
+      email: 'arum@company.com',
+      raw_password: 'ehsrum06@',
+      dept_id: 2,
+      position: 'Staff Creating Multiple Accounts',
+      phone: '081234567808',
+      salary_system: 'per_account',
+      rate: 4600,
+      base_salary: 600000,
+      daily_target: 5,
+      bonus: 0,
+      period_start: 15,
+      pay_date: '15'
+    },
+    {
+      emp_id: 'EMP009',
+      name: 'Sinta',
+      email: 'sinta@company.com',
+      raw_password: 'ehssin06@',
+      dept_id: 2,
+      position: 'Staff Creating Multiple Accounts',
+      phone: '081234567809',
+      salary_system: 'per_account',
+      rate: 4600,
+      base_salary: 600000,
+      daily_target: 5,
+      bonus: 0,
+      period_start: 15,
+      pay_date: '15'
+    },
+
+    // --- DEPARTEMEN 3: Video Production ---
+    {
+      emp_id: 'EMP010',
+      name: 'Sipa',
+      email: 'sipa@company.com',
+      raw_password: 'ehspa06@',
+      dept_id: 3,
+      position: 'Staff Video Production TikTok',
+      phone: '081234567810',
+      salary_system: 'per_account',
+      rate: 33000,
+      base_salary: 600000,
+      daily_target: 5,
+      bonus: 0,
+      period_start: 13,
+      pay_date: '13'
+    }
   ];
 
-  employees.forEach(emp => {
+  // Hapus akun demo bawaan lama agar tidak membingungkan (Budi, Siti, dll)
+  try {
+    const demoEmails = ['budi@company.com', 'siti@company.com', 'ahmad@company.com', 'dewi@company.com', 'rizky@company.com'];
+    demoEmails.forEach(dem => {
+      db.prepare('DELETE FROM users WHERE email = ?').run(dem);
+    });
+  } catch (e) {}
+
+  employeesData.forEach(emp => {
     try {
-      const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(emp[2]);
-      if (!exists) {
-        db.prepare('INSERT INTO users (employee_id, name, email, password_hash, role, department_id, position, phone, salary_system, rate_per_account, base_salary, daily_target, target_bonus, payroll_period, period_start_day, pay_date, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "per_account", 500, 0, 25, 5000, "bulanan", 1, "25", 1)').run(...emp);
+      const passwordHash = bcrypt.hashSync(emp.raw_password, 10);
+      const existing = db.prepare('SELECT id FROM users WHERE email = ? OR LOWER(name) = LOWER(?) OR employee_id = ?').get(emp.email, emp.name, emp.emp_id);
+
+      if (existing) {
+        db.prepare(`
+          UPDATE users 
+          SET employee_id = ?, name = ?, email = ?, password_hash = ?, role = 'employee',
+              department_id = ?, position = ?, phone = ?, salary_system = ?, rate_per_account = ?,
+              base_salary = ?, daily_target = ?, target_bonus = ?, payroll_period = 'bulanan',
+              period_start_day = ?, pay_date = ?, is_active = 1
+          WHERE id = ?
+        `).run(
+          emp.emp_id, emp.name, emp.email, passwordHash,
+          emp.dept_id, emp.position, emp.phone, emp.salary_system, emp.rate,
+          emp.base_salary, emp.daily_target, emp.bonus,
+          emp.period_start, emp.pay_date, existing.id
+        );
+      } else {
+        db.prepare(`
+          INSERT INTO users (
+            employee_id, name, email, password_hash, role,
+            department_id, position, phone, salary_system, rate_per_account,
+            base_salary, daily_target, target_bonus, payroll_period,
+            period_start_day, pay_date, is_active
+          ) VALUES (?, ?, ?, ?, 'employee', ?, ?, ?, ?, ?, ?, ?, ?, 'bulanan', ?, ?, 1)
+        `).run(
+          emp.emp_id, emp.name, emp.email, passwordHash,
+          emp.dept_id, emp.position, emp.phone, emp.salary_system, emp.rate,
+          emp.base_salary, emp.daily_target, emp.bonus,
+          emp.period_start, emp.pay_date
+        );
       }
-    } catch(e) {}
+    } catch (e) {
+      console.warn('Seed employee error for ' + emp.name + ':', e.message);
+    }
   });
 
   // Ensure default salary and earnings for all existing users and attendances
@@ -96,52 +307,11 @@ async function seed() {
     db.prepare('UPDATE attendance SET daily_earnings = accounts_created * rate_per_account WHERE daily_earnings IS NULL OR daily_earnings = 0').run();
     db.prepare('UPDATE attendance SET payment_status = "unpaid" WHERE payment_status IS NULL').run();
     db.prepare('UPDATE attendance SET approval_status = "approved" WHERE approval_status IS NULL').run();
-  } catch(e) {
+  } catch (e) {
     console.warn('Salary backfill note:', e.message);
   }
 
-  // Sample tasks for Digital Products & TikTok Store
-  const budi = db.prepare('SELECT id FROM users WHERE email = ?').get('budi@company.com');
-  const siti = db.prepare('SELECT id FROM users WHERE email = ?').get('siti@company.com');
-  const ahmad = db.prepare('SELECT id FROM users WHERE email = ?').get('ahmad@company.com');
-  const dewi = db.prepare('SELECT id FROM users WHERE email = ?').get('dewi@company.com');
-  const rizky = db.prepare('SELECT id FROM users WHERE email = ?').get('rizky@company.com');
-  const admin = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@company.com');
-
-  const adminId = admin ? admin.id : 1;
-
-  const tasks = [
-    ['QC & Verifikasi 20 Akun TikTok Siap Jual', 'Cek follower organik, email pertama, bebas pelanggaran, akun siap transfer ke pembeli', ahmad ? ahmad.id : 4, deptMap['Fulfillment & Akun Digital'] || 3, adminId, 'urgent', 'in_progress', '2026-10-02'],
-    ['Riset 5 Sound FYP & Upload 3 Video TikTok Produk Digital', 'Video promosi template digital & showcase akun TikTok bergaransi', siti ? siti.id : 3, deptMap['Konten & TikTok Creator'] || 2, adminId, 'high', 'in_progress', '2026-10-03'],
-    ['Proses Pengiriman Kredensial & File 12 Pesanan Hari Ini', 'Kirim detail login akun TikTok & link produk digital ke pembeli via WA', ahmad ? ahmad.id : 4, deptMap['Fulfillment & Akun Digital'] || 3, adminId, 'urgent', 'todo', '2026-10-01'],
-    ['Live Streaming Jualan Akun & Produk Digital (Shift Sore 16.00)', 'Target live 3 jam, promo diskon bundling akun siap live streaming', dewi ? dewi.id : 5, deptMap['Host Live Streaming'] || 4, adminId, 'high', 'todo', '2026-10-01'],
-    ['Rekap Penjualan Akun & Broadcast Promo ke Database WA/Telegram', 'Broadcast promo akun monet & produk digital ke reseller/pelanggan setia', budi ? budi.id : 2, deptMap['CS & Order'] || 1, adminId, 'medium', 'done', '2026-10-01'],
-    ['Optimasi Campaign TikTok Ads Produk Digital & Scale Up Budget', 'Cek ROAS campaign ebook & template digital, matikan ad set boncos', rizky ? rizky.id : 6, deptMap['Digital Ads & Traffic'] || 5, adminId, 'medium', 'in_progress', '2026-10-05'],
-  ];
-
-  tasks.forEach(t => {
-    try {
-      const exists = db.prepare('SELECT id FROM tasks WHERE title = ?').get(t[0]);
-      if (!exists) {
-        db.prepare('INSERT INTO tasks (title, description, assigned_to, department_id, created_by, priority, status, deadline) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(...t);
-      }
-    } catch(e) {}
-  });
-
-  // Sample attendance
-  const today = new Date().toISOString().split('T')[0];
-  const attendances = [
-    [budi ? budi.id : 2, today, '07:55', 'present'],
-    [siti ? siti.id : 3, today, '08:20', 'late'],
-    [ahmad ? ahmad.id : 4, today, '07:50', 'present'],
-  ];
-  attendances.forEach(a => {
-    try {
-      db.prepare('INSERT INTO attendance (user_id, date, clock_in, status) VALUES (?, ?, ?, ?)').run(...a);
-    } catch(e) {}
-  });
-
-  console.log('✅ Seed updated successfully for Digital Goods & TikTok Store!');
+  console.log('✅ 3 Official Departments & 10 Official Employees seeded successfully!');
 }
 
 module.exports = { seed };

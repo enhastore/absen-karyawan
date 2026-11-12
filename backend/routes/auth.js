@@ -9,17 +9,24 @@ router.post('/login', (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email dan password harus diisi.' });
+      return res.status(400).json({ error: 'Email / Nama Pengguna dan kata sandi harus diisi.' });
     }
 
-    const user = dbHelper.prepare('SELECT * FROM users WHERE email = ? AND is_active = 1').get(email);
+    const inputVal = email.trim();
+    // Dukung login dengan Email, ID Karyawan (EMP001), atau Nama Karyawan (misal: Naila)
+    const user = dbHelper.prepare(`
+      SELECT * FROM users 
+      WHERE (email = ? OR employee_id = ? OR LOWER(name) = LOWER(?) OR email LIKE ?) 
+        AND is_active = 1
+    `).get(inputVal, inputVal, inputVal, `${inputVal}@%`);
+
     if (!user) {
-      return res.status(401).json({ error: 'Email atau password salah.' });
+      return res.status(401).json({ error: 'Email/Username atau kata sandi salah.' });
     }
 
     const isValid = bcrypt.compareSync(password, user.password_hash);
     if (!isValid) {
-      return res.status(401).json({ error: 'Email atau password salah.' });
+      return res.status(401).json({ error: 'Email/Username atau kata sandi salah.' });
     }
 
     const token = generateToken(user);
