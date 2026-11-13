@@ -2,7 +2,10 @@ const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'database.sqlite');
+const isVercel = !!process.env.VERCEL;
+const localDbPath = path.join(__dirname, '..', 'database.sqlite');
+const tmpDbPath = path.join('/tmp', 'database.sqlite');
+const dbPath = isVercel ? tmpDbPath : localDbPath;
 
 let db = null;
 
@@ -23,6 +26,13 @@ async function initDatabase() {
 
     const SQL = await initSqlJs(wasmBinary ? { wasmBinary } : {});
     
+    // In Vercel serverless environment, copy seed database to /tmp if not yet present
+    if (isVercel && !fs.existsSync(tmpDbPath) && fs.existsSync(localDbPath)) {
+      try {
+        fs.copyFileSync(localDbPath, tmpDbPath);
+      } catch (e) {}
+    }
+
     // Load existing database or create new one
     if (fs.existsSync(dbPath)) {
       const fileBuffer = fs.readFileSync(dbPath);
@@ -267,7 +277,7 @@ async function initDatabase() {
 
 // Save database to file
 function saveDatabase() {
-  if (db && !process.env.VERCEL) {
+  if (db) {
     try {
       const data = db.export();
       const buffer = Buffer.from(data);
@@ -279,7 +289,7 @@ function saveDatabase() {
 }
 
 // Auto-save every 30 seconds (only in non-serverless environments)
-if (!process.env.VERCEL) {
+if (!isVercel) {
   setInterval(saveDatabase, 30000);
   process.on('exit', saveDatabase);
   process.on('SIGINT', () => { saveDatabase(); process.exit(); });

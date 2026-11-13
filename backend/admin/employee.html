@@ -507,8 +507,13 @@
       document.getElementById('emp-greeting').textContent = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
     }
 
-    // Set today's date for leave pickers
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Set today's date for leave pickers (WIB)
+    let todayStr = '';
+    try {
+      todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
+    } catch(e) {
+      todayStr = new Date().toISOString().split('T')[0];
+    }
     document.getElementById('l-start').value = todayStr;
     document.getElementById('l-end').value = todayStr;
 
@@ -693,9 +698,14 @@
       if (!modal) return;
       document.getElementById('in-attendance-notes').value = '';
 
-      // Tampilkan waktu saat ini di modal
+      // Tampilkan waktu saat ini di modal sesuai WIB
       const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+      let timeStr = '';
+      try {
+        timeStr = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+      } catch (e) {
+        timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+      }
       const timeDesc = document.getElementById('in-modal-time-desc');
       if (timeDesc) {
         timeDesc.innerHTML = `Waktu masuk: <strong>${timeStr} WIB</strong> · Anda dapat mengisi catatan masuk/rencana kerja hari ini jika ada.`;
@@ -741,7 +751,19 @@
       submitBtn.innerHTML = '<span>Menyimpan...</span>';
 
       try {
-        const data = await api.post('/attendance/clock-in', { notes });
+        const now = new Date();
+        let client_time = '';
+        let client_date = '';
+        try {
+          client_time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+          client_date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(now);
+        } catch (e) {}
+
+        const payload = { notes };
+        if (client_time) payload.client_time = client_time;
+        if (client_date) payload.client_date = client_date;
+
+        const data = await api.post('/attendance/clock-in', payload);
         showToast(data.message || 'Presensi masuk berhasil dicatat!', 'success');
         closeClockInModal();
         checkToday();
@@ -823,10 +845,22 @@
       submitBtn.innerHTML = '<span>Menyimpan & Menghitung...</span>';
 
       try {
-        const data = await api.post('/attendance/clock-out', {
+        const now = new Date();
+        let client_time = '';
+        let client_date = '';
+        try {
+          client_time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+          client_date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(now);
+        } catch (e) {}
+
+        const payload = {
           accounts_created: accountsCreated,
           work_report: workReport
-        });
+        };
+        if (client_time) payload.client_time = client_time;
+        if (client_date) payload.client_date = client_date;
+
+        const data = await api.post('/attendance/clock-out', payload);
         showToast(data.message || 'Presensi pulang & laporan berhasil dicatat!', 'success');
         closeClockOutModal();
         checkToday();

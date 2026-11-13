@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { dbHelper } = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { getWIBDate } = require('../config/timezone');
 
 // GET /api/tasks
 router.get('/', authenticateToken, (req, res) => {
@@ -46,7 +47,7 @@ router.get('/summary', authenticateToken, (req, res) => {
     const todo = dbHelper.prepare(`SELECT COUNT(*) as count FROM tasks ${w} ${w ? 'AND' : 'WHERE'} status = 'todo'`).get(...p).count;
     const inProgress = dbHelper.prepare(`SELECT COUNT(*) as count FROM tasks ${w} ${w ? 'AND' : 'WHERE'} status = 'in_progress'`).get(...p).count;
     const done = dbHelper.prepare(`SELECT COUNT(*) as count FROM tasks ${w} ${w ? 'AND' : 'WHERE'} status = 'done'`).get(...p).count;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getWIBDate();
     const overdue = dbHelper.prepare(`SELECT COUNT(*) as count FROM tasks ${w} ${w ? 'AND' : 'WHERE'} deadline < ? AND status != 'done' AND status != 'cancelled'`).get(...p, today).count;
 
     res.json({ todo, in_progress: inProgress, done, overdue, total: todo + inProgress + done });

@@ -3,14 +3,15 @@ const router = express.Router();
 const { dbHelper } = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { getWIB, getWIBDate, getWIBTime } = require('../config/timezone');
 
 // POST /api/attendance/clock-in (Instant, GPS removed)
 router.post('/clock-in', authenticateToken, upload.single('photo'), (req, res) => {
   try {
     const userId = req.user.id;
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date();
-    const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+    const wib = getWIB();
+    const today = (req.body.client_date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.client_date)) ? req.body.client_date : wib.date;
+    const currentTime = (req.body.client_time && /^([01]\d|2[0-3]):[0-5]\d$/.test(req.body.client_time)) ? req.body.client_time : wib.time;
 
     const existing = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?').get(userId, today);
     if (existing && existing.clock_in) {
@@ -39,7 +40,7 @@ router.post('/clock-in', authenticateToken, upload.single('photo'), (req, res) =
     }
 
     res.json({
-      message: `Presensi masuk berhasil! Status: ${status === 'late' ? 'Terlambat' : 'Tepat Waktu'} (${currentTime})`,
+      message: `Presensi masuk berhasil! Status: ${status === 'late' ? 'Terlambat' : 'Tepat Waktu'} (${currentTime} WIB)`,
       data: { time: currentTime, status, date: today },
     });
   } catch (err) {
@@ -52,11 +53,19 @@ router.post('/clock-in', authenticateToken, upload.single('photo'), (req, res) =
 router.post('/clock-out', authenticateToken, upload.single('photo'), (req, res) => {
   try {
     const userId = req.user.id;
-    const today = new Date().toISOString().split('T')[0];
-    const currentTime = new Date().toTimeString().split(' ')[0].substring(0, 5);
+    const wib = getWIB();
+    const today = (req.body.client_date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.client_date)) ? req.body.client_date : wib.date;
+    const currentTime = (req.body.client_time && /^([01]\d|2[0-3]):[0-5]\d$/.test(req.body.client_time)) ? req.body.client_time : wib.time;
 
-    const existing = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?').get(userId, today);
-    if (!existing || !existing.clock_in) return res.status(400).json({ error: 'Anda belum mencatat jam masuk hari ini.' });
+    let existing = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?').get(userId, today);
+    if (!existing || !existing.clock_in) {
+      const unclosed = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND clock_out IS NULL ORDER BY date DESC, id DESC LIMIT 1').get(userId);
+      if (unclosed && unclosed.clock_in) {
+        existing = unclosed;
+      } else {
+        return res.status(400).json({ error: 'Anda belum mencatat jam masuk hari ini.' });
+      }
+    }
     if (existing.clock_out) return res.status(400).json({ error: 'Anda sudah mencatat jam pulang hari ini.' });
 
     const user = dbHelper.prepare('SELECT name, salary_system, rate_per_account, base_salary, daily_target, target_bonus FROM users WHERE id = ?').get(userId);
@@ -117,13 +126,25 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), (req, res) 
 // GET /api/attendance/today
 router.get('/today', authenticateToken, (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const attendance = dbHelper.prepare(`
+    const today = req.query.date || getWIBDate();
+    let attendance = dbHelper.prepare(`
       SELECT a.*, u.rate_per_account as default_rate, u.daily_target, u.salary_system, u.name as user_name
       FROM attendance a
       JOIN users u ON a.user_id = u.id
       WHERE a.user_id = ? AND a.date = ?
     `).get(req.user.id, today);
+
+    // If no attendance today, check if there is an unclosed session from prior date
+    if (!attendance) {
+      const ongoing = dbHelper.prepare(`
+        SELECT a.*, u.rate_per_account as default_rate, u.daily_target, u.salary_system, u.name as user_name
+        FROM attendance a
+        JOIN users u ON a.user_id = u.id
+        WHERE a.user_id = ? AND a.clock_out IS NULL
+        ORDER BY a.date DESC, a.id DESC LIMIT 1
+      `).get(req.user.id);
+      if (ongoing) attendance = ongoing;
+    }
 
     // If no attendance yet, also get user's default rate
     let userRate = 500;
@@ -213,7 +234,7 @@ router.get('/all', authenticateToken, requireAdmin, (req, res) => {
 // GET /api/attendance/summary (Dashboard Admin - sesuai spek Dashboard Absensi ENHA)
 router.get('/summary', authenticateToken, requireAdmin, (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = req.query.date || getWIBDate();
 
     // Ambil seluruh karyawan aktif
     const employees = dbHelper.prepare(`
@@ -413,8 +434,7 @@ router.get('/summary', authenticateToken, requireAdmin, (req, res) => {
 router.get('/monthly-recap', authenticateToken, requireAdmin, (req, res) => {
   try {
     const { month, user_id, department_id } = req.query;
-    const now = new Date();
-    const targetMonth = month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const targetMonth = month || getWIBDate().substring(0, 7);
 
     let userQuery = `
       SELECT u.id, u.employee_id, u.name, u.email, u.position, u.phone,

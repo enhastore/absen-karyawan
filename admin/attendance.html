@@ -30,8 +30,10 @@
 
       <div class="page-content">
         <!-- Filter Bar with theme-adaptive dropdowns -->
-        <div class="filter-bar">
-          <input type="date" class="form-control" id="filter-date">
+        <div class="filter-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="date" class="form-control" id="filter-date" style="max-width:165px;" title="Pilih tanggal presensi">
+          <button class="btn btn-ghost btn-sm" id="btn-filter-today" type="button" style="padding:7px 11px;font-size:12px;white-space:nowrap;" title="Set ke tanggal hari ini (WIB)">Hari Ini</button>
+          <button class="btn btn-ghost btn-sm" id="btn-filter-all" type="button" style="padding:7px 11px;font-size:12px;white-space:nowrap;" title="Tampilkan semua data tanpa batasan tanggal">Semua Tanggal</button>
           <select class="form-control" id="filter-department">
             <option value="">Semua Departemen</option>
           </select>
@@ -206,8 +208,32 @@
     renderSidebar();
     setupSidebar('attendance.html');
     let allAttendance = [];
-    document.getElementById('filter-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('m-input-date').value = new Date().toISOString().split('T')[0];
+
+    function getWIBDateString() {
+      try {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
+      } catch (e) {
+        return new Date().toISOString().split('T')[0];
+      }
+    }
+
+    document.getElementById('filter-date').value = getWIBDateString();
+    document.getElementById('m-input-date').value = getWIBDateString();
+
+    document.getElementById('btn-filter-today').addEventListener('click', () => {
+      document.getElementById('filter-date').value = getWIBDateString();
+      loadAttendance();
+    });
+
+    document.getElementById('btn-filter-all').addEventListener('click', () => {
+      document.getElementById('filter-date').value = '';
+      loadAttendance();
+    });
+
+    function showAllDates() {
+      document.getElementById('filter-date').value = '';
+      loadAttendance();
+    }
 
     async function loadDepartments() {
       try {
@@ -245,7 +271,10 @@
 
         const tbody = document.getElementById('attendance-tbody');
         if (allAttendance.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:28px;">Tidak ada catatan kehadiran pada tanggal ini</td></tr>';
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted" style="padding:28px;">
+            Tidak ada catatan kehadiran pada filter tanggal ini.
+            <button class="btn btn-ghost btn-sm" style="margin-left:8px;font-size:11.5px;" onclick="showAllDates()">Tampilkan Semua Tanggal</button>
+          </td></tr>`;
           return;
         }
 
