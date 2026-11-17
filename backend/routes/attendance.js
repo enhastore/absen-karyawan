@@ -6,6 +6,35 @@ const upload = require('../middleware/upload');
 const { getWIB, getWIBDate, getWIBTime } = require('../config/timezone');
 const { supabase } = require('../config/supabase');
 
+function unpackSupabaseAttendance(row) {
+  if (!row) return row;
+  let accounts_created = row.accounts_created || 0;
+  let work_report = row.work_report || null;
+  let daily_earnings = row.daily_earnings || 0;
+  let rate_per_account = row.rate_per_account || 500;
+  let notes = row.notes;
+
+  if (notes && typeof notes === 'string' && notes.startsWith('{"accounts_created":')) {
+    try {
+      const parsed = JSON.parse(notes);
+      accounts_created = parsed.accounts_created !== undefined ? parsed.accounts_created : accounts_created;
+      work_report = parsed.work_report !== undefined ? parsed.work_report : work_report;
+      daily_earnings = parsed.daily_earnings !== undefined ? parsed.daily_earnings : daily_earnings;
+      rate_per_account = parsed.rate_per_account !== undefined ? parsed.rate_per_account : rate_per_account;
+      notes = parsed.user_notes !== undefined ? parsed.user_notes : null;
+    } catch (e) {}
+  }
+
+  return {
+    ...row,
+    accounts_created,
+    work_report,
+    daily_earnings,
+    rate_per_account,
+    notes
+  };
+}
+
 // POST /api/attendance/clock-in (Instant, GPS removed)
 router.post('/clock-in', authenticateToken, upload.single('photo'), async (req, res) => {
   try {
@@ -125,6 +154,13 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), async (req,
     }
     if (supabase) {
       try {
+        const metaPayload = JSON.stringify({
+          accounts_created: accountsCount,
+          rate_per_account: ratePerAccount,
+          daily_earnings: dailyEarnings,
+          work_report: reportNotes,
+          user_notes: notes || existing.notes || null
+        });
         await supabase.from('attendance').upsert({
           user_id: userId,
           date: today,
@@ -133,7 +169,7 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), async (req,
           status: existing.status,
           work_hours: workHours,
           overtime_hours: overtimeHours,
-          notes: notes || existing.notes || null
+          notes: metaPayload
         }, { onConflict: 'user_id,date' });
       } catch (e) {}
     }
@@ -160,15 +196,40 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), async (req,
 });
 
 // GET /api/attendance/today
-router.get('/today', authenticateToken, (req, res) => {
+router.get('/today', authenticateToken, async (req, res) => {
   try {
     const today = req.query.date || getWIBDate();
-    let attendance = dbHelper.prepare(`
-      SELECT a.*, u.rate_per_account as default_rate, u.daily_target, u.salary_system, u.name as user_name
-      FROM attendance a
-      JOIN users u ON a.user_id = u.id
-      WHERE a.user_id = ? AND a.date = ?
-    `).get(req.user.id, today);
+    let attendance = null;
+
+    if (supabase) {
+      try {
+        const { data: sRow } = await supabase.from('attendance')
+          .select('*')
+          .eq('user_id', req.user.id)
+          .eq('date', today)
+          .maybeSingle();
+        if (sRow) {
+          const user = dbHelper.prepare('SELECT rate_per_account, daily_target, salary_system, name FROM users WHERE id = ?').get(req.user.id);
+          const unpacked = unpackSupabaseAttendance(sRow);
+          attendance = {
+            ...unpacked,
+            default_rate: user?.rate_per_account || 500,
+            daily_target: user?.daily_target || 0,
+            salary_system: user?.salary_system || 'per_account',
+            user_name: user?.name || req.user.name
+          };
+        }
+      } catch (e) {}
+    }
+
+    if (!attendance) {
+      attendance = dbHelper.prepare(`
+        SELECT a.*, u.rate_per_account as default_rate, u.daily_target, u.salary_system, u.name as user_name
+        FROM attendance a
+        JOIN users u ON a.user_id = u.id
+        WHERE a.user_id = ? AND a.date = ?
+      `).get(req.user.id, today);
+    }
 
     // If no attendance today, check if there is an unclosed session from prior date
     if (!attendance) {
@@ -216,12 +277,29 @@ router.get('/today', authenticateToken, (req, res) => {
 });
 
 // GET /api/attendance/history
-router.get('/history', authenticateToken, (req, res) => {
+router.get('/history', authenticateToken, async (req, res) => {
   try {
     const { month, year, page = 1, limit = 31 } = req.query;
+
+    if (supabase) {
+      try {
+        let q = supabase.from('attendance').select('*').eq('user_id', req.user.id);
+        if (month && year) {
+          const prefix = `${year}-${String(month).padStart(2, '0')}`;
+          q = q.gte('date', `${prefix}-01`).lte('date', `${prefix}-31`);
+        }
+        const { data: sData } = await q.order('date', { ascending: false });
+        if (sData && sData.length > 0) {
+          const offset = (parseInt(page) - 1) * parseInt(limit);
+          const paginated = sData.slice(offset, offset + parseInt(limit)).map(unpackSupabaseAttendance);
+          return res.json({ attendance: paginated });
+        }
+      } catch (e) {}
+    }
+
     let query = 'SELECT * FROM attendance WHERE user_id = ?';
     const params = [req.user.id];
-    if (month && year) { query += " AND date LIKE ?"; params.push(`${year}-${month.padStart(2, '0')}%`); }
+    if (month && year) { query += " AND date LIKE ?"; params.push(`${year}-${String(month).padStart(2, '0')}%`); }
     query += ' ORDER BY date DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
     res.json({ attendance: dbHelper.prepare(query).all(...params) });
@@ -231,9 +309,51 @@ router.get('/history', authenticateToken, (req, res) => {
 });
 
 // GET /api/attendance/all (Admin)
-router.get('/all', authenticateToken, requireAdmin, (req, res) => {
+router.get('/all', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { date, department, status, search, page = 1, limit = 100 } = req.query;
+
+    if (supabase) {
+      try {
+        let q = supabase.from('attendance').select('*');
+        if (date) q = q.eq('date', date);
+        if (status) q = q.eq('status', status);
+        const { data: sData } = await q.order('date', { ascending: false }).order('clock_in', { ascending: false });
+        if (sData && sData.length > 0) {
+          const empList = dbHelper.prepare(`
+            SELECT u.id, u.employee_id, u.name, u.avatar, d.name as department_name, u.department_id
+            FROM users u
+            LEFT JOIN departments d ON u.department_id = d.id
+          `).all();
+          const empMap = {};
+          empList.forEach(e => { empMap[e.id] = e; });
+
+          let filtered = sData.map(row => {
+            const a = unpackSupabaseAttendance(row);
+            const e = empMap[a.user_id] || {};
+            return {
+              ...a,
+              name: e.name || 'Karyawan',
+              employee_id: e.employee_id || '-',
+              avatar: e.avatar || null,
+              department_name: e.department_name || '-',
+              department_id: e.department_id
+            };
+          });
+
+          if (department) filtered = filtered.filter(f => String(f.department_id) === String(department));
+          if (search) {
+            const sLower = search.toLowerCase();
+            filtered = filtered.filter(f => (f.name && f.name.toLowerCase().includes(sLower)) || (f.employee_id && f.employee_id.toLowerCase().includes(sLower)));
+          }
+
+          const offset = (parseInt(page) - 1) * parseInt(limit);
+          const paginated = filtered.slice(offset, offset + parseInt(limit));
+          return res.json({ attendance: paginated, pagination: { page: parseInt(page), limit: parseInt(limit), total: filtered.length, pages: Math.ceil(filtered.length / limit) } });
+        }
+      } catch (e) {}
+    }
+
     let conditions = ['1=1'];
     const params = [];
 
@@ -268,7 +388,7 @@ router.get('/all', authenticateToken, requireAdmin, (req, res) => {
 });
 
 // GET /api/attendance/summary (Dashboard Admin - sesuai spek Dashboard Absensi ENHA)
-router.get('/summary', authenticateToken, requireAdmin, (req, res) => {
+router.get('/summary', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const today = req.query.date || getWIBDate();
 
@@ -283,10 +403,21 @@ router.get('/summary', authenticateToken, requireAdmin, (req, res) => {
       ORDER BY u.name ASC
     `).all();
 
-    // Ambil data absensi hari ini
-    const todayAttendances = dbHelper.prepare(`
-      SELECT * FROM attendance WHERE date = ?
-    `).all(today);
+    // Ambil data absensi hari ini (Utamakan dari Supabase Cloud)
+    let todayAttendances = [];
+    if (supabase) {
+      try {
+        const { data: sAtt } = await supabase.from('attendance').select('*').eq('date', today);
+        if (sAtt && sAtt.length > 0) {
+          todayAttendances = sAtt.map(unpackSupabaseAttendance);
+        }
+      } catch (e) {}
+    }
+    if (todayAttendances.length === 0) {
+      todayAttendances = dbHelper.prepare(`
+        SELECT * FROM attendance WHERE date = ?
+      `).all(today);
+    }
 
     // Ambil data cuti/izin yang aktif hari ini
     const todayLeaves = dbHelper.prepare(`
@@ -630,7 +761,7 @@ router.put('/payment-status', authenticateToken, requireAdmin, (req, res) => {
 });
 
 // PUT /api/attendance/:id (Mekanisme Koreksi Presensi oleh Admin)
-router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const attId = req.params.id;
     const existing = dbHelper.prepare('SELECT * FROM attendance WHERE id = ?').get(attId);
@@ -675,6 +806,30 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
       attId
     );
 
+    if (typeof saveDatabaseAsync === 'function') {
+      await saveDatabaseAsync();
+    }
+    if (supabase) {
+      try {
+        const metaPayload = JSON.stringify({
+          accounts_created: newAccounts,
+          rate_per_account: newRate,
+          daily_earnings: newEarnings,
+          work_report: newReport,
+          user_notes: newNotes
+        });
+        await supabase.from('attendance').upsert({
+          user_id: existing.user_id,
+          date: existing.date,
+          clock_in: newClockIn,
+          clock_out: newClockOut,
+          status: newStatus,
+          work_hours: workHours,
+          notes: metaPayload
+        }, { onConflict: 'user_id,date' });
+      } catch (e) {}
+    }
+
     const updated = dbHelper.prepare('SELECT * FROM attendance WHERE id = ?').get(attId);
     res.json({ message: 'Koreksi absensi berhasil disimpan.', attendance: updated });
   } catch (err) {
@@ -684,7 +839,7 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
 });
 
 // POST /api/attendance/manual (Admin Input Absensi Manual / Koreksi Darurat)
-router.post('/manual', authenticateToken, requireAdmin, (req, res) => {
+router.post('/manual', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { user_id, date, clock_in, clock_out, status = 'present', accounts_created = 0, rate_per_account, work_report, notes } = req.body;
     if (!user_id || !date) {
@@ -714,7 +869,6 @@ router.post('/manual', authenticateToken, requireAdmin, (req, res) => {
           work_report=?, notes=?, approval_status='approved'
         WHERE id=?
       `).run(clock_in || null, clock_out || null, status, workHours, accounts, rate, earnings, work_report || null, notes || null, existing.id);
-      return res.json({ message: 'Data absensi manual berhasil diperbarui.' });
     } else {
       dbHelper.prepare(`
         INSERT INTO attendance (
@@ -723,8 +877,33 @@ router.post('/manual', authenticateToken, requireAdmin, (req, res) => {
           work_report, notes, approval_status, payment_status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 'unpaid')
       `).run(user_id, date, clock_in || null, clock_out || null, status, workHours, accounts, rate, earnings, work_report || null, notes || null);
-      return res.status(201).json({ message: 'Absensi manual berhasil dicatat.' });
     }
+
+    if (typeof saveDatabaseAsync === 'function') {
+      await saveDatabaseAsync();
+    }
+    if (supabase) {
+      try {
+        const metaPayload = JSON.stringify({
+          accounts_created: accounts,
+          rate_per_account: rate,
+          daily_earnings: earnings,
+          work_report: work_report || null,
+          user_notes: notes || null
+        });
+        await supabase.from('attendance').upsert({
+          user_id: user_id,
+          date: date,
+          clock_in: clock_in || null,
+          clock_out: clock_out || null,
+          status: status,
+          work_hours: workHours,
+          notes: metaPayload
+        }, { onConflict: 'user_id,date' });
+      } catch (e) {}
+    }
+
+    return res.json({ message: existing ? 'Data absensi manual berhasil diperbarui.' : 'Absensi manual berhasil dicatat.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Terjadi kesalahan server saat menyimpan absensi manual.' });
