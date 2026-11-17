@@ -43,7 +43,17 @@ router.post('/clock-in', authenticateToken, upload.single('photo'), async (req, 
     const today = (req.body.client_date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.client_date)) ? req.body.client_date : wib.date;
     const currentTime = (req.body.client_time && /^([01]\d|2[0-3]):[0-5]\d$/.test(req.body.client_time)) ? req.body.client_time : wib.time;
 
-    const existing = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?').get(userId, today);
+    let existing = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?').get(userId, today);
+    if (!existing && supabase) {
+      try {
+        const { data: sRow } = await supabase.from('attendance')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('date', today)
+          .maybeSingle();
+        if (sRow) existing = sRow;
+      } catch (e) {}
+    }
     if (existing && existing.clock_in) {
       return res.status(400).json({ error: 'Anda sudah mencatat kehadiran masuk hari ini.' });
     }
@@ -104,8 +114,46 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), async (req,
     const currentTime = (req.body.client_time && /^([01]\d|2[0-3]):[0-5]\d$/.test(req.body.client_time)) ? req.body.client_time : wib.time;
 
     let existing = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?').get(userId, today);
+    if (!existing && supabase) {
+      try {
+        const { data: sRow } = await supabase.from('attendance')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('date', today)
+          .maybeSingle();
+        if (sRow) {
+          try {
+            dbHelper.prepare('INSERT OR IGNORE INTO attendance (user_id, date, clock_in, status, notes) VALUES (?, ?, ?, ?, ?)')
+              .run(userId, today, sRow.clock_in, sRow.status, sRow.notes);
+            existing = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?').get(userId, today);
+          } catch (e) {}
+          if (!existing) existing = sRow;
+        }
+      } catch (e) {}
+    }
+
     if (!existing || !existing.clock_in) {
-      const unclosed = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND clock_out IS NULL ORDER BY date DESC, id DESC LIMIT 1').get(userId);
+      let unclosed = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND clock_out IS NULL ORDER BY date DESC, id DESC LIMIT 1').get(userId);
+      if (!unclosed && supabase) {
+        try {
+          const { data: sUnclosed } = await supabase.from('attendance')
+            .select('*')
+            .eq('user_id', userId)
+            .is('clock_out', null)
+            .order('date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (sUnclosed) {
+            try {
+              dbHelper.prepare('INSERT OR IGNORE INTO attendance (user_id, date, clock_in, status, notes) VALUES (?, ?, ?, ?, ?)')
+                .run(userId, sUnclosed.date, sUnclosed.clock_in, sUnclosed.status, sUnclosed.notes);
+              unclosed = dbHelper.prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?').get(userId, sUnclosed.date);
+            } catch (e) {}
+            if (!unclosed) unclosed = sUnclosed;
+          }
+        } catch (e) {}
+      }
+
       if (unclosed && unclosed.clock_in) {
         existing = unclosed;
       } else {
@@ -140,13 +188,23 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), async (req,
     // Hitung pendapatan sementara hari ini: Jumlah Akun x Tarif per Akun
     const dailyEarnings = accountsCount * ratePerAccount;
 
-    dbHelper.prepare(`
-      UPDATE attendance 
-      SET clock_out=?, clock_out_photo=?, work_hours=?, overtime_hours=?, 
-          accounts_created=?, rate_per_account=?, daily_earnings=?, 
-          work_report=?, notes=? 
-      WHERE id=?
-    `).run(currentTime, photo, workHours, overtimeHours, accountsCount, ratePerAccount, dailyEarnings, reportNotes, notes || existing.notes || null, existing.id);
+    if (existing.id) {
+      dbHelper.prepare(`
+        UPDATE attendance 
+        SET clock_out=?, clock_out_photo=?, work_hours=?, overtime_hours=?, 
+            accounts_created=?, rate_per_account=?, daily_earnings=?, 
+            work_report=?, notes=? 
+        WHERE id=?
+      `).run(currentTime, photo, workHours, overtimeHours, accountsCount, ratePerAccount, dailyEarnings, reportNotes, notes || existing.notes || null, existing.id);
+    } else {
+      dbHelper.prepare(`
+        INSERT OR REPLACE INTO attendance (
+          user_id, date, clock_in, clock_out, clock_out_photo, work_hours, overtime_hours,
+          accounts_created, rate_per_account, daily_earnings, work_report, notes, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(userId, existing.date || today, existing.clock_in, currentTime, photo, workHours, overtimeHours,
+             accountsCount, ratePerAccount, dailyEarnings, reportNotes, notes || existing.notes || null, existing.status || 'present');
+    }
 
     // Persist to Supabase cloud storage & table
     if (typeof saveDatabaseAsync === 'function') {
