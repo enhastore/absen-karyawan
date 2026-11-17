@@ -212,13 +212,6 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), async (req,
     }
     if (supabase) {
       try {
-        const metaPayload = JSON.stringify({
-          accounts_created: accountsCount,
-          rate_per_account: ratePerAccount,
-          daily_earnings: dailyEarnings,
-          work_report: reportNotes,
-          user_notes: notes || existing.notes || null
-        });
         await supabase.from('attendance').upsert({
           user_id: userId,
           date: today,
@@ -227,7 +220,11 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), async (req,
           status: existing.status,
           work_hours: workHours,
           overtime_hours: overtimeHours,
-          notes: metaPayload
+          accounts_created: accountsCount,
+          rate_per_account: ratePerAccount,
+          daily_earnings: dailyEarnings,
+          work_report: reportNotes,
+          notes: notes || existing.notes || null
         }, { onConflict: 'user_id,date' });
       } catch (e) {}
     }
@@ -869,13 +866,6 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     }
     if (supabase) {
       try {
-        const metaPayload = JSON.stringify({
-          accounts_created: newAccounts,
-          rate_per_account: newRate,
-          daily_earnings: newEarnings,
-          work_report: newReport,
-          user_notes: newNotes
-        });
         await supabase.from('attendance').upsert({
           user_id: existing.user_id,
           date: existing.date,
@@ -883,7 +873,11 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
           clock_out: newClockOut,
           status: newStatus,
           work_hours: workHours,
-          notes: metaPayload
+          accounts_created: newAccounts,
+          rate_per_account: newRate,
+          daily_earnings: newEarnings,
+          work_report: newReport,
+          notes: newNotes
         }, { onConflict: 'user_id,date' });
       } catch (e) {}
     }
@@ -942,13 +936,6 @@ router.post('/manual', authenticateToken, requireAdmin, async (req, res) => {
     }
     if (supabase) {
       try {
-        const metaPayload = JSON.stringify({
-          accounts_created: accounts,
-          rate_per_account: rate,
-          daily_earnings: earnings,
-          work_report: work_report || null,
-          user_notes: notes || null
-        });
         await supabase.from('attendance').upsert({
           user_id: user_id,
           date: date,
@@ -956,7 +943,11 @@ router.post('/manual', authenticateToken, requireAdmin, async (req, res) => {
           clock_out: clock_out || null,
           status: status,
           work_hours: workHours,
-          notes: metaPayload
+          accounts_created: accounts,
+          rate_per_account: rate,
+          daily_earnings: earnings,
+          work_report: work_report || null,
+          notes: notes || null
         }, { onConflict: 'user_id,date' });
       } catch (e) {}
     }
