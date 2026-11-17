@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { dbHelper } = require('../config/database');
+const { dbHelper, saveDatabaseAsync } = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 // GET /api/users
@@ -270,7 +270,7 @@ router.get('/:id/activities', authenticateToken, (req, res) => {
 });
 
 // POST /api/users/:id/notes (Tambah catatan khusus aktivitas oleh Admin)
-router.post('/:id/notes', authenticateToken, requireAdmin, (req, res) => {
+router.post('/:id/notes', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
     const { note, category = 'aktivitas' } = req.body;
@@ -286,6 +286,10 @@ router.post('/:id/notes', authenticateToken, requireAdmin, (req, res) => {
       INSERT INTO employee_notes (user_id, author_id, author_name, note, category)
       VALUES (?, ?, ?, ?, ?)
     `).run(userId, req.user.id, authorName, note.trim(), category);
+
+    if (typeof saveDatabaseAsync === 'function') {
+      await saveDatabaseAsync();
+    }
 
     const insertedId = (result && result.lastInsertRowid)
       ? result.lastInsertRowid

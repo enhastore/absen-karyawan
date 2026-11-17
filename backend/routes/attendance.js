@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { dbHelper } = require('../config/database');
+const { dbHelper, saveDatabaseAsync } = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { getWIB, getWIBDate, getWIBTime } = require('../config/timezone');
+const { supabase } = require('../config/supabase');
 
 // POST /api/attendance/clock-in (Instant, GPS removed)
-router.post('/clock-in', authenticateToken, upload.single('photo'), (req, res) => {
+router.post('/clock-in', authenticateToken, upload.single('photo'), async (req, res) => {
   try {
     const userId = req.user.id;
     const wib = getWIB();
@@ -39,6 +40,22 @@ router.post('/clock-in', authenticateToken, upload.single('photo'), (req, res) =
         .run(userId, today, currentTime, photo, status, notes || null);
     }
 
+    // Persist to Supabase cloud storage & table
+    if (typeof saveDatabaseAsync === 'function') {
+      await saveDatabaseAsync();
+    }
+    if (supabase) {
+      try {
+        await supabase.from('attendance').upsert({
+          user_id: userId,
+          date: today,
+          clock_in: currentTime,
+          status: status,
+          notes: notes || null
+        }, { onConflict: 'user_id,date' });
+      } catch (e) {}
+    }
+
     res.json({
       message: `Presensi masuk berhasil! Status: ${status === 'late' ? 'Terlambat' : 'Tepat Waktu'} (${currentTime} WIB)`,
       data: { time: currentTime, status, date: today },
@@ -50,7 +67,7 @@ router.post('/clock-in', authenticateToken, upload.single('photo'), (req, res) =
 });
 
 // POST /api/attendance/clock-out (Instant, GPS removed)
-router.post('/clock-out', authenticateToken, upload.single('photo'), (req, res) => {
+router.post('/clock-out', authenticateToken, upload.single('photo'), async (req, res) => {
   try {
     const userId = req.user.id;
     const wib = getWIB();
@@ -101,6 +118,25 @@ router.post('/clock-out', authenticateToken, upload.single('photo'), (req, res) 
           work_report=?, notes=? 
       WHERE id=?
     `).run(currentTime, photo, workHours, overtimeHours, accountsCount, ratePerAccount, dailyEarnings, reportNotes, notes || existing.notes || null, existing.id);
+
+    // Persist to Supabase cloud storage & table
+    if (typeof saveDatabaseAsync === 'function') {
+      await saveDatabaseAsync();
+    }
+    if (supabase) {
+      try {
+        await supabase.from('attendance').upsert({
+          user_id: userId,
+          date: today,
+          clock_in: existing.clock_in,
+          clock_out: currentTime,
+          status: existing.status,
+          work_hours: workHours,
+          overtime_hours: overtimeHours,
+          notes: notes || existing.notes || null
+        }, { onConflict: 'user_id,date' });
+      } catch (e) {}
+    }
 
     res.json({
       message: `Presensi pulang & laporan (${accountsCount} akun) berhasil dicatat! Pendapatan sementara hari ini: Rp${dailyEarnings.toLocaleString('id-ID')}`,

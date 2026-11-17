@@ -1,6 +1,7 @@
 const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
+const { supabase } = require('./supabase');
 
 const isVercel = !!process.env.VERCEL;
 const localDbPath = path.join(__dirname, '..', 'database.sqlite');
@@ -26,16 +27,43 @@ async function initDatabase() {
 
     const SQL = await initSqlJs(wasmBinary ? { wasmBinary } : {});
     
-    // In Vercel serverless environment, copy seed database to /tmp if not yet present
-    if (isVercel && !fs.existsSync(tmpDbPath) && fs.existsSync(localDbPath)) {
+    let fileBuffer = null;
+
+    // 1. Try to download the latest persistent database from Supabase Storage
+    if (supabase) {
       try {
-        fs.copyFileSync(localDbPath, tmpDbPath);
-      } catch (e) {}
+        const { data: downloadData, error: dErr } = await supabase.storage
+          .from('absenku_data')
+          .download('database.sqlite');
+        if (downloadData && !dErr) {
+          const ab = await downloadData.arrayBuffer();
+          fileBuffer = Buffer.from(ab);
+          console.log('☁️ Loaded persistent database from Supabase Storage (' + fileBuffer.length + ' bytes)');
+          if (isVercel) {
+            try { fs.writeFileSync(tmpDbPath, fileBuffer); } catch(e) {}
+          }
+        } else if (dErr) {
+          console.warn('Notice from Supabase Storage download:', dErr.message);
+        }
+      } catch (err) {
+        console.warn('Supabase Storage load note:', err.message);
+      }
     }
 
-    // Load existing database or create new one
-    if (fs.existsSync(dbPath)) {
-      const fileBuffer = fs.readFileSync(dbPath);
+    // 2. Fallback to /tmp or local database.sqlite
+    if (!fileBuffer) {
+      if (isVercel && !fs.existsSync(tmpDbPath) && fs.existsSync(localDbPath)) {
+        try {
+          fs.copyFileSync(localDbPath, tmpDbPath);
+        } catch (e) {}
+      }
+
+      if (fs.existsSync(dbPath)) {
+        fileBuffer = fs.readFileSync(dbPath);
+      }
+    }
+
+    if (fileBuffer) {
       db = new SQL.Database(fileBuffer);
     } else {
       db = new SQL.Database();
@@ -275,7 +303,47 @@ async function initDatabase() {
   return db;
 }
 
-// Save database to file
+// Sync database to Supabase Storage
+let isSyncing = false;
+let pendingSync = false;
+
+async function doUploadToSupabase() {
+  if (!supabase || !db) return;
+  try {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    const { error } = await supabase.storage
+      .from('absenku_data')
+      .upload('database.sqlite', buffer, {
+        contentType: 'application/x-sqlite3',
+        upsert: true
+      });
+    if (error) {
+      console.warn('Supabase storage upload note:', error.message);
+    } else {
+      console.log('☁️ Database successfully persisted to Supabase Storage (' + buffer.length + ' bytes)');
+    }
+  } catch (err) {
+    console.warn('Supabase storage upload error:', err.message);
+  }
+}
+
+async function syncToSupabaseStorage() {
+  if (isSyncing) {
+    pendingSync = true;
+    return;
+  }
+  isSyncing = true;
+  pendingSync = false;
+  await doUploadToSupabase();
+  isSyncing = false;
+  if (pendingSync) {
+    pendingSync = false;
+    setTimeout(syncToSupabaseStorage, 300);
+  }
+}
+
+// Save database to file and sync to cloud
 function saveDatabase() {
   if (db) {
     try {
@@ -284,6 +352,27 @@ function saveDatabase() {
       fs.writeFileSync(dbPath, buffer);
     } catch (e) {
       console.warn('saveDatabase warning:', e.message);
+    }
+
+    if (supabase) {
+      syncToSupabaseStorage();
+    }
+  }
+}
+
+// Explicit awaitable save for critical routes (clock-in, clock-out)
+async function saveDatabaseAsync() {
+  if (db) {
+    try {
+      const data = db.export();
+      const buffer = Buffer.from(data);
+      fs.writeFileSync(dbPath, buffer);
+    } catch (e) {}
+
+    if (supabase) {
+      isSyncing = true;
+      await doUploadToSupabase();
+      isSyncing = false;
     }
   }
 }
@@ -375,4 +464,4 @@ const dbHelper = {
   }
 };
 
-module.exports = { initDatabase, getDb, dbHelper, saveDatabase };
+module.exports = { initDatabase, getDb, dbHelper, saveDatabase, saveDatabaseAsync };
