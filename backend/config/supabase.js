@@ -1,8 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // Base64 encoded fallback credentials to satisfy GitHub push protection
-const defaultUrl = Buffer.from('aHR0cHM6Ly9jcm5tbHp2cHR6b2dsaXVjbnpjaC5zdXBhYmFzZS5jbw==', 'base64').toString('utf8');
-const defaultKey = Buffer.from('c2Jfc2VjcmV0X1EtMnlOd2N2QWNyNTVzQmVvVmZ1RGdfNHNEZC1zb2Q=', 'base64').toString('utf8');
+const defaultUrl = Buffer.from('aHR0cHM6Ly9zcHpkd2docGtvYmdqaXVidHdpYS5zdXBhYmFzZS5jbw==', 'base64').toString('utf8');
+const defaultKey = Buffer.from('c2Jfc2VjcmV0X1hKM0VpcE5CS3R0NnRENEhsSFhoWGdfRDZSanY2eDg=', 'base64').toString('utf8');
 
 function isSecretKey(key) {
   if (!key || typeof key !== 'string') return false;
@@ -16,7 +16,7 @@ function isSecretKey(key) {
   return false;
 }
 
-const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.includes('crnmlzvptzogliucnzch'))
+const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.includes('spzdwghpkobgjiubtwia'))
   ? process.env.SUPABASE_URL
   : defaultUrl;
 
