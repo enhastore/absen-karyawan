@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const { initDatabase } = require('./config/database');
 const { seed } = require('./config/seed');
+const { supabase } = require('./config/supabase');
 
 const fs = require('fs');
 
@@ -57,9 +58,22 @@ app.use('/api/leaves', require('./routes/leaves'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/ai', require('./routes/ai'));
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+// Health check & Supabase keep-alive ping
+app.get('/api/health', async (req, res) => {
+  let supabaseStatus = 'not_configured';
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('departments').select('id').limit(1);
+      supabaseStatus = error ? `error: ${error.message}` : 'active';
+    } catch (e) {
+      supabaseStatus = `exception: ${e.message}`;
+    }
+  }
+  res.json({
+    status: 'OK',
+    supabase: supabaseStatus,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Serve admin/index.html on root
